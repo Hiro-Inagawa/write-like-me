@@ -14,13 +14,33 @@ When a voice is already built, it reads your profile and writes or revises prose
 
 ## Getting started
 
-The first thing you need is a corpus of your own writing, gathered into a folder. Export your Claude conversation history from Settings → Data Controls → Export Data, then unzip the file into the folder. Add any other writing that sounds like you, including emails, essays, articles, notes, and journal entries. More words give more reliable measurements, with 20,000 as the minimum and 50,000 or more recommended.
+**Step 1. Gather your writing corpus.**
 
-Once you have a folder ready, run `/write-like-me` in any Claude Code session. The skill will ask where your corpus lives, walk through the analysis, show you the mined rules for your review, and write your voice profile and a standalone report to the folder you specify.
+Create a folder and put your writing in it. Good sources:
+- Export your Claude conversation history: Settings → Data Controls → Export Data, then unzip the file into the folder
+- Emails you have written
+- Essays, articles, blog posts, papers
+- Notes, journals, or any other text in your own voice
 
-After that, every time you want to write or revise prose, run `/write-like-me`. The skill detects that a voice is already built and goes straight to writing mode.
+Aim for at least 20,000 words. 50,000 or more gives more reliable results.
 
-The skill supports as many profiles as you want. Build separate ones for professional writing, email, and social media posts, each stored under its own name in the `voices/` folder, and switch between them by naming the profile when you invoke the skill. You can also build a profile from a published author whose style you want to study. Point the skill at a corpus of their work and it runs the same full analysis, treating their patterns as an influence layer rather than binding rules.
+**Step 2. Run the skill.**
+
+Open any Claude Code session and run `/write-like-me`. The skill will ask where your corpus lives, run the analysis, and show you the mined rules for your review before writing anything. Once you confirm, it writes your voice profile and a standalone report to the folder you specify.
+
+**Step 3. Write.**
+
+From this point on, run `/write-like-me` whenever you want to write or revise prose. The skill detects that a voice is already built and goes straight to writing mode.
+
+**Optional: Build more profiles.**
+
+You can have as many profiles as you want, each stored under its own name in the `voices/` folder. Some ideas:
+- A profile for professional writing
+- A profile for email
+- A profile for social media
+- A profile built from a published author whose style you want to study (the skill treats their patterns as an influence layer, not hard rules)
+
+Name the profile when you invoke the skill and it switches automatically.
 
 ## What gets measured
 
