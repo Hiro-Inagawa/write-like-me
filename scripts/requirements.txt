@@ -1,0 +1,8 @@
+# Base analysis runs on Python stdlib only — no installs required.
+#
+# Optional: readability scores (Flesch-Kincaid, Gunning Fog, syllable counts)
+textstat>=0.7.0
+#
+# Optional: POS-rhythm, dependency tree depth, passive voice rate
+# After installing spacy, also run: python -m spacy download en_core_web_sm
+spacy>=3.7.0
