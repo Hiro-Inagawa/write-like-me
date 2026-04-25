@@ -107,16 +107,25 @@ Two optional packages add extended features (install via `pip install -r scripts
 
 ## Output
 
-Running the analysis produces three files per voice profile:
+Running the analysis produces four files per voice profile, plus a standalone report:
 
 ```
 voices/<your-name>/
   01-generative.md      # Quantitative targets, structural patterns, exemplars — read when writing
   02-corrective.md      # Hard bans, soft checks, mechanical scan table — read after writing
   03-corpus-source.md   # Provenance: what was analyzed, when, with what filters
+  claude-ai-skill.md    # Self-contained export for Claude.ai Skills upload
 
 _STYLE-PROFILE-<DATE>.md   # Human-readable stylometric report (place this wherever you like)
 ```
+
+The `claude-ai-skill.md` file is ready to use in Claude.ai immediately after the build completes. To add it:
+
+1. Go to Claude.ai → Settings → Customize → Skills
+2. Either upload `claude-ai-skill.md` directly, or open the file and paste its contents into the instruction field
+3. Save. Claude.ai will apply your voice rules in every conversation where the skill is active.
+
+Unlike the Claude Code skill files, `claude-ai-skill.md` has no external dependencies. All rules, patterns, and exemplars are inlined in a single file.
 
 The standalone report includes:
 - Cross-register comparison table (all measured features across all registers)
@@ -155,8 +164,14 @@ write-like-me/
     generated-01-generative.md      # Skeleton for write-time guidance
     generated-02-corrective.md      # Skeleton for post-write checklist
     generated-03-corpus-source.md   # Skeleton for provenance file
+    generated-claude-ai-skill.md    # Skeleton for the Claude.ai Skills export
     style-profile-report.md         # Skeleton for the standalone report
   voices/                           # Your voice profiles live here (not committed to git)
+    <your-name>/
+      01-generative.md              # Write-time guidance (Claude Code)
+      02-corrective.md              # Post-write checklist (Claude Code)
+      03-corpus-source.md           # Provenance (Claude Code)
+      claude-ai-skill.md            # Self-contained export for Claude.ai Skills
 ```
 
 ## License

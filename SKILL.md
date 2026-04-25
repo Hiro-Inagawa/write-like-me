@@ -118,6 +118,7 @@ Using the approved rules and corpus statistics:
    - `voices/<name>/02-corrective.md`
    - `voices/<name>/03-corpus-source.md`
 3. Write the standalone stylometric report to the corpus root
+4. Write `voices/<name>/claude-ai-skill.md` using `templates/generated-claude-ai-skill.md`. This file is self-contained: all rules, patterns, and exemplars are inlined directly with no references to external files. It is ready to upload to Claude.ai → Settings → Customize → Skills, or to paste into the Skills instruction field.
 
 Ask if the user wants to inspect any file before verification.
 

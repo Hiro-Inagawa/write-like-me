@@ -15,6 +15,7 @@ The generated skill lives at `~/.claude/skills/<name>-voice/`:
     01-generative.md        # Positive patterns + exemplars (read at write-time)
     02-corrective.md        # Hard bans + scan-for list (read after writing)
     03-corpus-source.md     # Provenance
+  claude-ai-skill.md        # Self-contained export for Claude.ai Skills upload
 ```
 
 Use the templates in `templates/` as skeletons. Fill in the corpus-specific data.
@@ -73,6 +74,34 @@ Record:
 - Key measured values table (primary register only)
 - Re-run instructions
 - Limitations
+
+---
+
+## claude-ai-skill.md
+
+A self-contained voice file for upload to Claude.ai Settings → Customize → Skills. Unlike the Claude Code skill files, this file has no dependencies — everything is inlined.
+
+**What it contains:**
+
+- YAML frontmatter: `name` and `description` (Claude.ai reads these to identify the skill)
+- Quantitative targets table for the primary register
+- Structural patterns (full text, not a reference to another file)
+- All hard bans, with bad/good examples, inlined
+- Soft checks, inlined
+- Universal anti-AI baseline, inlined
+- Exemplars, inlined with annotations
+- Register notes if multiple registers were analyzed
+
+**What it does NOT contain:**
+
+- `Read` tool calls or references to other files (Claude.ai cannot read local files)
+- The provenance table (not useful in writing mode)
+- The re-run instructions (Claude Code context only)
+- The mechanical scan grep table (not executable in Claude.ai; keep hard bans as natural-language instructions instead)
+
+**How to use the output file:**
+
+Upload it at Claude.ai → Settings → Customize → Skills, or paste the contents directly into the Skills instruction field. The YAML frontmatter is read by Claude.ai to name and describe the skill; the body is the instruction text.
 
 ---
 
