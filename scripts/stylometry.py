@@ -38,7 +38,6 @@ import math
 import statistics
 import collections
 import argparse
-import random
 from pathlib import Path
 from datetime import date
 
@@ -82,7 +81,7 @@ HEDGE_TOKENS = frozenset({
     "might", "maybe", "perhaps", "somewhat", "roughly", "possibly", "could",
     "would", "may", "likely", "unlikely", "apparently", "presumably",
     "generally", "often", "sometimes", "occasionally", "tend", "tends",
-    "suggest", "suggests", "suggest", "appear", "appears", "seem", "seems",
+    "suggest", "suggests", "appear", "appears", "seem", "seems",
     "indicate", "indicates",
 })
 HEDGE_PHRASES = ["i think", "i believe", "i suspect", "in some sense",
@@ -409,7 +408,13 @@ def compute_spacy_features(text: str) -> dict:
         for i in range(len(pos_seq) - 1):
             pos_bigrams[(pos_seq[i], pos_seq[i+1])] += 1
 
-        depths.append(max((t.head.i - t.i for t in tokens), default=0))
+        def _hop_depth(token):
+            d, cur = 0, token
+            while cur.head != cur and d < 50:
+                cur = cur.head
+                d += 1
+            return d
+        depths.append(max((_hop_depth(t) for t in tokens), default=0))
 
         verbs = [t for t in tokens if t.pos_ == "VERB"]
         for v in verbs:

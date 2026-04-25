@@ -3,10 +3,14 @@
 extract_author_turns.py - Extract author-only content from conversation exports.
 
 Usage:
-    python extract_author_turns.py <input_dir> [options]
+    python extract_author_turns.py <input> [options]
 
 Options:
-    --marker TEXT        The heading that marks the author's turns.
+    --format FORMAT      Export format: markdown (default), claude, chatgpt
+                         - markdown: .md files split on heading markers
+                         - claude:   Claude.ai conversations.json export
+                         - chatgpt:  ChatGPT conversations.json export
+    --marker TEXT        Heading that marks the author's turns (markdown format only).
                          Default: "## Hiro"
                          Examples: "## User", "**You:**", "### Human"
     --output PATH        Write extracted text to this file (default: stdout)
@@ -23,7 +27,7 @@ The script strips from extracted turns:
     - Component markers
     - Citation inline markers
     - HTML tags
-    - Lines that look like Claude responses that leaked through
+    - Lines that look like AI responses that leaked through
 
 Output is plain prose text, suitable for stylometry.py input.
 """
@@ -48,11 +52,13 @@ _RE_HTML          = re.compile(r'<[^>]+>')
 _RE_DEVICE_NOTE   = re.compile(r'This block is not supported on your current device yet\.?', re.IGNORECASE)
 _RE_TRAILING_WS   = re.compile(r'[ \t]+$', re.MULTILINE)
 
-# Claude-tell phrases — lines likely to be leaked assistant content
+# AI-tell phrases — lines likely to be leaked assistant content
 CLAUDE_TELLS = [
     "as an ai", "as a language model", "i'm an ai", "i am an ai",
     "i don't have personal", "i cannot have opinions",
     "claude here", "i'm claude",
+    "i'll help you", "i'd be happy to", "let me know if you",
+    "certainly!", "certainly,",
 ]
 
 
@@ -73,7 +79,6 @@ def clean_turn(text: str) -> str:
     text = _RE_HTML.sub('', text)
     text = _RE_DEVICE_NOTE.sub('', text)
     text = _RE_TRAILING_WS.sub('', text)
-    # Collapse multiple blank lines
     text = re.sub(r'\n{3,}', '\n\n', text)
     return text.strip()
 
@@ -83,80 +88,64 @@ def contains_claude_tell(text: str) -> bool:
     return any(tell in text_lower for tell in CLAUDE_TELLS)
 
 
+def _make_stats(file_name: str, raw_bytes: int, combined: str, warn_threshold: float) -> dict:
+    extracted_bytes = len(combined.encode("utf-8"))
+    yield_fraction = extracted_bytes / max(raw_bytes, 1)
+    return {
+        "file": file_name,
+        "raw_bytes": raw_bytes,
+        "extracted_bytes": extracted_bytes,
+        "turns_extracted": len([p for p in combined.split("\n\n") if p.strip()]),
+        "yield_fraction": round(yield_fraction, 3),
+        "low_yield": yield_fraction < warn_threshold,
+    }
+
+
+# --- Markdown extraction ---
+
 def extract_turns_from_file(
     path: Path,
     author_marker: str,
     warn_threshold: float = 0.05,
 ) -> tuple:
-    """
-    Extract author-only turns from one markdown file.
-
-    Returns:
-        (extracted_text: str, stats: dict)
-    """
+    """Extract author-only turns from one markdown file."""
     raw = path.read_text(encoding="utf-8", errors="replace")
     raw_len = len(raw)
-
-    # Build a header pattern: match the exact marker line
-    # We split on any '## ...' heading and check if it matches the author marker
-    # Handle both '## Hiro' style (exact) and partial-match patterns
     marker_clean = author_marker.strip().lower()
 
-    # Split file into sections on any ## heading
     section_pattern = re.compile(r'^(#+\s+.+)$', re.MULTILINE)
     parts = section_pattern.split(raw)
-    # parts = [text_before_first_heading, heading1, text1, heading2, text2, ...]
 
     turns = []
     i = 0
     while i < len(parts):
         part = parts[i]
         if section_pattern.match(part):
-            # This is a heading
             heading = part.strip()
             if heading.lower().startswith(marker_clean) or heading.lower() == marker_clean:
-                # Next part is the body of this author turn
                 if i + 1 < len(parts):
                     body = parts[i + 1]
                     cleaned = clean_turn(body)
                     if cleaned and len(cleaned) > 20:
                         if not contains_claude_tell(cleaned):
                             turns.append(cleaned)
-                        else:
-                            pass  # silently skip likely leaked assistant content
                 i += 2
                 continue
         i += 1
 
     combined = "\n\n".join(turns)
-    extracted_len = len(combined)
-    yield_fraction = extracted_len / max(raw_len, 1)
-
-    stats = {
-        "file": str(path.name),
-        "raw_bytes": raw_len,
-        "extracted_bytes": extracted_len,
-        "turns_extracted": len(turns),
-        "yield_fraction": round(yield_fraction, 3),
-        "low_yield": yield_fraction < warn_threshold,
-    }
-
+    stats = _make_stats(path.name, raw_len, combined, warn_threshold)
     return combined, stats
 
 
-def load_corpus(
+def load_corpus_markdown(
     input_dir: Path,
     author_marker: str = "## Hiro",
     min_file_bytes: int = 500,
     include_duplicates: bool = False,
     warn_threshold: float = 0.05,
 ) -> tuple:
-    """
-    Process all markdown files in a directory.
-
-    Returns:
-        (all_text: str, per_file_stats: list, warnings: list)
-    """
+    """Process all markdown files in a directory."""
     md_files = sorted(input_dir.rglob("*.md"))
 
     all_turns = []
@@ -190,6 +179,106 @@ def load_corpus(
     return "\n\n".join(all_turns), per_file_stats, warnings
 
 
+# --- Claude.ai JSON extraction ---
+
+def extract_from_claude_json(json_path: Path, warn_threshold: float = 0.05) -> tuple:
+    """Extract human turns from a Claude.ai conversations.json export."""
+    raw_bytes = json_path.stat().st_size
+    data = json.loads(json_path.read_text(encoding="utf-8", errors="replace"))
+    if not isinstance(data, list):
+        data = [data]
+
+    turns = []
+    for conv in data:
+        for msg in conv.get("chat_messages", []):
+            if msg.get("sender") != "human":
+                continue
+            text = msg.get("text", "").strip()
+            if not text or len(text) <= 20:
+                continue
+            cleaned = clean_turn(text)
+            if cleaned and not contains_claude_tell(cleaned):
+                turns.append(cleaned)
+
+    combined = "\n\n".join(turns)
+    stats = _make_stats(json_path.name, raw_bytes, combined, warn_threshold)
+    return combined, stats
+
+
+# --- ChatGPT JSON extraction ---
+
+def extract_from_chatgpt_json(json_path: Path, warn_threshold: float = 0.05) -> tuple:
+    """Extract user turns from a ChatGPT conversations.json export."""
+    raw_bytes = json_path.stat().st_size
+    data = json.loads(json_path.read_text(encoding="utf-8", errors="replace"))
+    if not isinstance(data, list):
+        data = [data]
+
+    turns = []
+    for conv in data:
+        for node in conv.get("mapping", {}).values():
+            msg = node.get("message")
+            if not msg:
+                continue
+            if msg.get("author", {}).get("role") != "user":
+                continue
+            parts = msg.get("content", {}).get("parts", [])
+            text = " ".join(str(p) for p in parts if isinstance(p, str)).strip()
+            if not text or len(text) <= 20:
+                continue
+            cleaned = clean_turn(text)
+            if cleaned and not contains_claude_tell(cleaned):
+                turns.append(cleaned)
+
+    combined = "\n\n".join(turns)
+    stats = _make_stats(json_path.name, raw_bytes, combined, warn_threshold)
+    return combined, stats
+
+
+def load_corpus_json(
+    input_path: Path,
+    fmt: str,
+    warn_threshold: float = 0.05,
+) -> tuple:
+    """Process Claude.ai or ChatGPT JSON conversation exports."""
+    extractor = extract_from_claude_json if fmt == "claude" else extract_from_chatgpt_json
+
+    if input_path.is_file() and input_path.suffix == ".json":
+        json_files = [input_path]
+    elif input_path.is_dir():
+        conv_json = input_path / "conversations.json"
+        json_files = [conv_json] if conv_json.exists() else sorted(input_path.rglob("*.json"))
+    else:
+        return "", [], [f"Error: {input_path} is not a JSON file or directory."]
+
+    all_turns = []
+    per_file_stats = []
+    warnings = []
+
+    for path in json_files:
+        try:
+            extracted, stats = extractor(path, warn_threshold)
+        except Exception as e:
+            warnings.append(f"Error reading {path.name}: {e}")
+            continue
+
+        per_file_stats.append(stats)
+
+        if stats["low_yield"] and stats["raw_bytes"] > 5000:
+            warnings.append(
+                f"Low extraction yield in {path.name}: "
+                f"{stats['yield_fraction']*100:.1f}% "
+                f"({stats['turns_extracted']} turns extracted)"
+            )
+
+        if extracted:
+            all_turns.append(extracted)
+
+    return "\n\n".join(all_turns), per_file_stats, warnings
+
+
+# --- Shared utilities ---
+
 def show_preview(all_text: str, n: int = 5) -> None:
     """Print N random paragraph-length samples from extracted text."""
     paragraphs = [p.strip() for p in re.split(r'\n{2,}', all_text) if len(p.strip()) > 100]
@@ -203,8 +292,7 @@ def show_preview(all_text: str, n: int = 5) -> None:
     print(f"{'='*60}")
     for i, para in enumerate(sample, 1):
         print(f"\n[Sample {i}]\n{para[:500]}{'...' if len(para) > 500 else ''}")
-    print(f"\n{'='*60}")
-    print("Do these look like the author's own prose? (y/n)")
+    print(f"\n{'='*60}\n")
 
 
 def print_stats_summary(stats_list: list, warnings: list) -> None:
@@ -235,9 +323,11 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=__doc__,
     )
-    parser.add_argument("input", help="Directory containing conversation export .md files")
+    parser.add_argument("input", help="Directory or file containing conversation exports")
+    parser.add_argument("--format", choices=["markdown", "claude", "chatgpt"], default="markdown",
+                        help="Export format: markdown (default), claude (Claude.ai JSON), chatgpt (ChatGPT JSON)")
     parser.add_argument("--marker", default="## Hiro",
-                        help="Heading that marks the author's turns (default: '## Hiro')")
+                        help="Heading that marks the author's turns (markdown format only, default: '## Hiro')")
     parser.add_argument("--output", help="Write extracted text to this file (default: stdout)")
     parser.add_argument("--preview", type=int, default=0,
                         help="Show N random samples and exit (0 = disabled)")
@@ -248,17 +338,27 @@ def main():
     args = parser.parse_args()
 
     input_path = Path(args.input)
-    if not input_path.is_dir():
-        print(f"Error: {input_path} is not a directory.", file=sys.stderr)
+    if not input_path.exists():
+        print(f"Error: {input_path} does not exist.", file=sys.stderr)
         sys.exit(1)
 
-    all_text, stats_list, warnings = load_corpus(
-        input_path,
-        author_marker=args.marker,
-        min_file_bytes=args.min_file_bytes,
-        include_duplicates=args.no_dedup,
-        warn_threshold=args.warn_threshold,
-    )
+    if args.format in ("claude", "chatgpt"):
+        all_text, stats_list, warnings = load_corpus_json(
+            input_path,
+            fmt=args.format,
+            warn_threshold=args.warn_threshold,
+        )
+    else:
+        if not input_path.is_dir():
+            print(f"Error: {input_path} is not a directory (required for markdown format).", file=sys.stderr)
+            sys.exit(1)
+        all_text, stats_list, warnings = load_corpus_markdown(
+            input_path,
+            author_marker=args.marker,
+            min_file_bytes=args.min_file_bytes,
+            include_duplicates=args.no_dedup,
+            warn_threshold=args.warn_threshold,
+        )
 
     print_stats_summary(stats_list, warnings)
 
@@ -267,7 +367,7 @@ def main():
         return
 
     if not all_text.strip():
-        print("Error: no content extracted. Check --marker setting.", file=sys.stderr)
+        print("Error: no content extracted. Check --format and --marker settings.", file=sys.stderr)
         sys.exit(1)
 
     if args.output:

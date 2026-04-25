@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 Generate a combined stylometric report from pre-computed JSON profile files.
 
@@ -226,15 +227,25 @@ def main():
     parser = argparse.ArgumentParser(description="Generate combined stylometric report from JSON profiles.")
     parser.add_argument("profiles", nargs="+", help="JSON profile files (label:path or just path)")
     parser.add_argument("--output", required=True, help="Output markdown file path")
+    parser.add_argument("--author", default="", help="Author name for the report title")
     args = parser.parse_args()
 
     profiles = []
     for spec in args.profiles:
-        if ":" in spec and not spec.startswith("C:") and not spec.startswith("/"):
-            label, path = spec.split(":", 1)
+        spec_path = Path(spec)
+        # A label prefix looks like "name:path". Distinguish it from a Windows
+        # drive letter (C:, D:, etc.) by checking that the part before the colon
+        # is longer than one character.
+        colon_idx = spec.find(":")
+        has_label = (
+            colon_idx > 1  # more than one char before colon — not a drive letter
+            and not spec_path.exists()  # not a bare path that happens to contain no colon
+        )
+        if has_label:
+            label, path = spec[:colon_idx], spec[colon_idx + 1:]
         else:
             path = spec
-            label = Path(spec).stem
+            label = spec_path.stem
 
         try:
             data = json.loads(Path(path).read_text(encoding="utf-8"))
@@ -244,12 +255,14 @@ def main():
             print(f"Error loading {path}: {e}", file=sys.stderr)
             sys.exit(1)
 
+    title = f"# Stylometric Profile" + (f" — {args.author}" if args.author else "")
+    register_list = ", ".join(label for label, _ in profiles)
     out_lines = [
-        f"# Stylometric Profile — Hiro Fukushima",
+        title,
         f"",
         f"**Generated:** {date.today().isoformat()}  ",
-        f"**Corpus:** Four registers analyzed separately — article-public, paper-formal, declarative-personal, conversation-casual  ",
-        f"**Method:** Computational stylometry (stdlib-only base tier). Features: function word frequencies, MATTR, sentence length distribution, punctuation rates, hedging/booster density, pronoun rates, sentence-initial patterns, hapax legomena ratio. See `building-voice-skills/references/03-methodology.md` for full academic grounding.",
+        f"**Corpus:** Registers analyzed: {register_list}  ",
+        f"**Method:** Computational stylometry (stdlib-only base tier). Features: function word frequencies, MATTR, sentence length distribution, punctuation rates, hedging/booster density, pronoun rates, sentence-initial patterns, hapax legomena ratio. See `references/03-methodology.md` for full academic grounding.",
         f"",
         f"---",
         f"",
@@ -263,17 +276,13 @@ def main():
     out_lines += [
         "## Notes on Interpretation",
         "",
-        "**Register matters.** These three corpora are written by the same person but represent fundamentally different communication modes. The article-public register (2,146 words) is the primary writing target — polished, published-quality essay prose. The paper-formal register (12,643 words) is academic draft prose with shorter sentences and less rhetorical elaboration. The conversation-casual register (325,211 words) reflects spoken-register habits: first-person, colloquial, short sentences.",
+        "**Register matters.** Each corpus in this report represents a different communication mode written by the same person. Features vary substantially across registers — this is expected. The register you write in most deliberately (polished essays, articles, or formal prose) is the primary target for the voice profile.",
         "",
-        "**Em dashes in article-public register.** The em-dash count in the article corpus should be zero — Hiro explicitly does not use em dashes in polished prose. The 0.000 reading after the multi-line component tag bug was fixed confirms this.",
+        "**Zero counts are informative.** A punctuation rate of 0.000 for em dashes or semicolons is not a data error — it is a style signal. Writers who consistently avoid certain marks do so deliberately, and that pattern is as diagnostic as high rates.",
         "",
-        "**Hedging calibration.** Hiro's hedging density in polished prose (~0.2 per 100 words) is low. This reflects calibrated epistemic care: well-supported claims are stated flatly; hedges appear only where genuine uncertainty exists. This is not imprecision — it is the opposite.",
+        "**Small corpora.** Any register with fewer than 20,000 words produces distributional features with higher variance. Sentence length means and punctuation rates are directionally valid but should be treated as ranges rather than precise targets.",
         "",
-        "**Function word profiles.** The function word distributions above reflect register-specific grammar. The article-public profile shows the connective structure (high 'that', 'which', 'because', 'since') characteristic of explanatory analytical prose. The conversation-casual profile shows the high 'I', 'you', 'it' pattern of interactive dialogue.",
-        "",
-        "**What this corpus does not capture.** The analysis covers December 2025 through April 2026. Any stylistic drift before this period is not captured. The corpus is single-author with no inter-rater reliability check. The article-public corpus at 2,146 words is at the lower bound for reliable distributional features — the numbers are directionally valid but have higher variance than the larger registers.",
-        "",
-        "**Academic grounding.** All features used here have established research grounding. Function word frequency profiles: Mosteller & Wallace (1964), Burrows (2002). MATTR: Covington & McFall (2010). Sentence length distribution: Mendenhall (1887), Biber (1988). Punctuation rates: Grieve (2007). Hedging/booster: Biber & Finegan (1988), Hyland (1998). Register analysis: Biber (1988). Full citations in `building-voice-skills/references/03-methodology.md`.",
+        "**Academic grounding.** All features used here have established research grounding. Function word frequency profiles: Mosteller & Wallace (1964), Burrows (2002). MATTR: Covington & McFall (2010). Sentence length distribution: Mendenhall (1887), Biber (1988). Punctuation rates: Grieve (2007). Hedging/booster: Biber & Finegan (1988), Hyland (1998). Register analysis: Biber (1988). Full citations in `references/03-methodology.md`.",
         "",
     ]
 
