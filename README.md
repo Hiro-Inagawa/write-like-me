@@ -1,47 +1,55 @@
 # Write Like Me
 
-A Claude Code skill that analyzes how you write and generates a personalized voice profile for writing and revising prose. Uses linguistic and psychological measurement methods — not subjective descriptions — to capture your actual style from a corpus of your own writing.
+A Claude Code skill that analyzes how you write and generates a personalized voice profile for writing and revising prose. It uses linguistic and psychological measurement methods rather than subjective descriptions to capture your actual style from a corpus of your own writing.
 
-The same skill supports multiple voices. One profile for your own writing, another for a different register, another built from an author whose style you want to study. You switch between them within the same skill.
+The same skill supports multiple voices. You can build one from your primary writing register, another from a different register, and another from an author whose style you want to study, and switch between them within the same skill.
 
 ## How it works
 
-Two modes, one skill:
+The skill has two modes.
 
-**No voice built yet** — the skill runs a 7-stage analysis: it discovers your corpus, extracts and filters the text, measures approximately 50 stylometric features per register, mines rules from the measurements and any existing style notes, pauses for your review, generates the voice profile, and runs a held-out verification test.
+When no voice is built yet, it runs a 7-stage analysis that discovers your corpus, extracts and filters the text, measures approximately 50 stylometric features per register, mines rules from the measurements and any existing style notes, pauses for your review, generates the voice profile, and runs a held-out verification test.
 
-**Voice already built** — the skill reads your profile and writes or revises prose in that voice. The universal anti-AI baseline (`references/00-universal-baseline.md`) is always active, on top of whatever your profile specifies.
+When a voice is already built, it reads your profile and writes or revises prose in that voice. The universal anti-AI baseline (`references/00-universal-baseline.md`) is always active, on top of whatever your profile specifies.
+
+## Getting started
+
+The first thing you need is a corpus of your own writing, gathered into a folder. Export your Claude conversation history from Settings → Data Controls → Export Data, then unzip the file into the folder. Add any other writing that sounds like you, including emails, essays, articles, notes, and journal entries. More words give more reliable measurements, with 20,000 as the minimum and 50,000 or more recommended.
+
+Once you have a folder ready, run `/write-like-me` in any Claude Code session. The skill will ask where your corpus lives, walk through the analysis, show you the mined rules for your review, and write your voice profile and a standalone report to the folder you specify.
+
+After that, every time you want to write or revise prose, run `/write-like-me`. The skill detects that a voice is already built and goes straight to writing mode.
+
+The skill supports as many profiles as you want. Build separate ones for professional writing, email, and social media posts, each stored under its own name in the `voices/` folder, and switch between them by naming the profile when you invoke the skill. You can also build a profile from a published author whose style you want to study. Point the skill at a corpus of their work and it runs the same full analysis, treating their patterns as an influence layer rather than binding rules.
 
 ## What gets measured
 
-The analysis covers approximately 50 features across four categories:
+The analysis covers approximately 50 features across four categories.
 
-**Lexical** — type-token ratio (MATTR, window 100), function word frequencies, hapax legomena ratio, distinctive content words against a general-English baseline.
+**Lexical.** Type-token ratio (MATTR, window 100), function word frequencies, hapax legomena ratio, distinctive content words against a general-English baseline.
 
-**Syntactic** — sentence length distribution (mean, median, standard deviation, quartiles), comma rate per sentence, em-dash / semicolon / colon / parenthetical rates per 1,000 words, concession rate, sentence-initial word patterns.
+**Syntactic.** Sentence length distribution (mean, median, standard deviation, quartiles), comma rate per sentence, em-dash / semicolon / colon / parenthetical rates per 1,000 words, concession rate, sentence-initial word patterns.
 
-**Hedging and stance** — hedging token density (might, perhaps, possibly, roughly, appears to), booster token density (clearly, certainly, definitely, very), first-person singular and plural rates, second-person rate.
+**Hedging and stance.** Hedging token density (might, perhaps, possibly, roughly, appears to), booster token density (clearly, certainly, definitely, very), first-person singular and plural rates, second-person rate.
 
-**Structural** — paragraph length distribution, heading density, bullet ratio.
+**Structural.** Paragraph length distribution, heading density, bullet ratio.
 
-Optional tiers: readability scores (Flesch-Kincaid, Gunning Fog) with `textstat`; POS-rhythm, dependency depth, passive voice rate with `spaCy`.
-
-Academic grounding for all features is in `references/03-methodology.md`.
+Two optional tiers add readability scores (Flesch-Kincaid, Gunning Fog) via `textstat`, and POS-rhythm, dependency depth, and passive voice rate via `spaCy`. Academic grounding for all features is in `references/03-methodology.md`.
 
 ## What you need
 
 - [Claude Code](https://claude.ai/code)
 - Python 3.8+
-- A writing corpus — 20,000 words minimum; 50,000+ recommended for reliable distributions
+- A writing corpus of at least 20,000 words (50,000 or more recommended for reliable distributions)
 
-**Sources the skill accepts:**
+The skill accepts writing from any of these sources:
 
 | Source | What it provides |
 |--------|-----------------|
-| Your own essays, articles, papers | Primary corpus — sets hard rules |
-| Claude.ai or ChatGPT conversation exports | Conversational register — your turns only, filtered by author marker |
+| Your own essays, articles, papers | Primary corpus. Drives the hard rules. |
+| Claude.ai or ChatGPT conversation exports | Conversational register, extracted to your turns only using a configurable author marker |
 | Notes, journals, emails | Informal register |
-| A published author's work you admire | Influence layer — sets positive patterns, not hard rules |
+| A published author's work you admire | Influence layer. Sets positive patterns rather than hard rules. |
 | Existing style rule files or correction logs | Incorporated directly into rule mining |
 
 ## Installation
@@ -60,17 +68,17 @@ Invoke in any Claude Code session:
 
 ## Exporting your conversations
 
-**Claude.ai:** Go to Settings → Data Controls → Export Data. You receive a zip file containing your conversation history. The extraction script accepts the exported JSON directly with `--format claude`.
+**Claude.ai.** Go to Settings → Data Controls → Export Data. You receive a zip file containing your conversation history. The extraction script accepts the exported JSON directly with `--format claude`.
 
-**ChatGPT:** Go to Settings → Data Controls → Export Data. Use `--format chatgpt`.
+**ChatGPT.** Go to Settings → Data Controls → Export Data. Use `--format chatgpt`.
 
 The script `scripts/extract_author_turns.py` filters to your turns only using a configurable author marker. The skill shows you 5 random samples and waits for your confirmation before analysis proceeds.
 
 ## Python dependencies
 
-The base analysis runs on Python stdlib only — no installs required.
+The base analysis runs on Python stdlib only, with no installs required.
 
-Optional (install via `pip install -r scripts/requirements.txt`):
+Two optional packages add extended features (install via `pip install -r scripts/requirements.txt`):
 
 | Package | Adds |
 |---------|------|
@@ -79,7 +87,7 @@ Optional (install via `pip install -r scripts/requirements.txt`):
 
 ## Output
 
-Running the analysis produces:
+Running the analysis produces three files per voice profile:
 
 ```
 voices/<your-name>/
@@ -90,9 +98,9 @@ voices/<your-name>/
 _STYLE-PROFILE-<DATE>.md   # Human-readable stylometric report (place this wherever you like)
 ```
 
-**Report structure:**
+The standalone report includes:
 - Cross-register comparison table (all measured features across all registers)
-- Per-register breakdown (sentence length distribution, function word frequencies, punctuation rates, hedging/booster density, pronoun rates)
+- Per-register breakdown (sentence length distribution, function word frequencies, punctuation rates, hedging and booster density, pronoun rates)
 - Notes on interpretation (which register is the primary target, what zero counts mean, corpus limitations)
 - Provenance and re-run instructions
 
@@ -100,7 +108,7 @@ _STYLE-PROFILE-<DATE>.md   # Human-readable stylometric report (place this where
 
 Every voice inherits a set of zero-tolerance rules for patterns that AI systems produce by default and that human writers do not. These are in `references/00-universal-baseline.md` and are active regardless of what any individual voice profile specifies.
 
-The baseline covers: em dashes as clause separators, stance adverbials ("Importantly,", "Notably,"), filler openers ("It is worth noting that"), unsupported evaluative adjectives ("innovative", "robust"), and performative verb choices ("delve", "leverage", "foster"). These patterns appear in AI-generated text at rates far above any individual human writer's baseline. Removing them is a prerequisite for the voice profile to be meaningful.
+The baseline removes em dashes as clause separators, stance adverbials ("Importantly,", "Notably,"), filler openers ("It is worth noting that"), unsupported evaluative adjectives ("innovative", "robust"), and performative verb choices ("delve", "leverage", "foster"). These patterns appear in AI-generated text at rates far above any individual human writer's baseline, and removing them is a prerequisite for the voice profile to be meaningful.
 
 ## File structure
 
@@ -109,7 +117,7 @@ write-like-me/
   README.md
   SKILL.md                          # Mode detection, routing, 7-stage workflow
   references/
-    00-universal-baseline.md        # Anti-AI-tell rules — always active
+    00-universal-baseline.md        # Anti-AI-tell rules, always active
     01-corpus-discovery.md          # What makes a good corpus; consent guardrail
     02-author-filtering.md          # Filtering exports; preview/confirm step
     03-methodology.md               # Full academic grounding for all features
