@@ -1,10 +1,12 @@
-# Write Like Me
+![Write Like Me. Rows of robots writing at desks under a neon sign reading WRITE LIKE ME](docs/write-like-me.webp)
 
 A Claude Code skill that analyzes how you write and generates a personalized voice profile for writing and revising prose. It uses linguistic and psychological measurement methods rather than subjective descriptions to capture your actual style from a corpus of your own writing.
 
 The same skill supports multiple voices. You can build one from your primary writing register, another from a different register, and another from an author whose style you want to study, and switch between them within the same skill.
 
-## How it works
+---
+
+## HOW IT WORKS
 
 The skill has two modes.
 
@@ -12,7 +14,9 @@ When no voice is built yet, it runs a 7-stage analysis that discovers your corpu
 
 When a voice is already built, it reads your profile and writes or revises prose in that voice. The universal anti-AI baseline (`references/00-universal-baseline.md`) is always active, on top of whatever your profile specifies.
 
-## Getting started
+---
+
+## GETTING STARTED
 
 **Step 1. Gather your writing corpus.**
 
@@ -42,21 +46,29 @@ You can have as many profiles as you want, each stored under its own name in the
 
 Name the profile when you invoke the skill and it switches automatically.
 
-## What gets measured
+---
+
+## WHAT GETS MEASURED
 
 The analysis covers approximately 50 features across four categories.
 
-**Lexical.** Type-token ratio (MATTR, window 100), function word frequencies, hapax legomena ratio, distinctive content words against a general-English baseline.
+**Lexical:**<br>
+Type-token ratio (MATTR, window 100), function word frequencies, hapax legomena ratio, distinctive content words against a general-English baseline.
 
-**Syntactic.** Sentence length distribution (mean, median, standard deviation, quartiles), comma rate per sentence, em-dash / semicolon / colon / parenthetical rates per 1,000 words, concession rate, sentence-initial word patterns.
+**Syntactic:**<br>
+Sentence length distribution (mean, median, standard deviation, quartiles), comma rate per sentence, em-dash / semicolon / colon / parenthetical rates per 1,000 words, concession rate, sentence-initial word patterns.
 
-**Hedging and stance.** Hedging token density (might, perhaps, possibly, roughly, appears to), booster token density (clearly, certainly, definitely, very), first-person singular and plural rates, second-person rate.
+**Hedging and stance:**<br>
+Hedging token density (might, perhaps, possibly, roughly, appears to), booster token density (clearly, certainly, definitely, very), first-person singular and plural rates, second-person rate.
 
-**Structural.** Paragraph length distribution, heading density, bullet ratio.
+**Structural:**<br>
+Paragraph length distribution, heading density, bullet ratio.
 
 Two optional tiers add readability scores (Flesch-Kincaid, Gunning Fog) via `textstat`, and POS-rhythm, dependency depth, and passive voice rate via `spaCy`. Academic grounding for all features is in `references/03-methodology.md`.
 
-## What you need
+---
+
+## WHAT YOU NEED
 
 - [Claude Code](https://claude.ai/code)
 - Python 3.8+
@@ -72,7 +84,9 @@ The skill accepts writing from any of these sources:
 | A published author's work you admire | Influence layer. Sets positive patterns rather than hard rules. |
 | Existing style rule files or correction logs | Incorporated directly into rule mining |
 
-## Installation
+---
+
+## INSTALLATION
 
 Copy the `write-like-me/` folder into your Claude Code skills directory:
 
@@ -86,7 +100,9 @@ Invoke in any Claude Code session:
 /write-like-me
 ```
 
-## Exporting your conversations
+---
+
+## EXPORTING YOUR CONVERSATIONS
 
 **Claude.ai.** Go to Settings → Data Controls → Export Data. You receive a zip file containing your conversation history. The extraction script accepts the exported JSON directly with `--format claude`.
 
@@ -94,7 +110,9 @@ Invoke in any Claude Code session:
 
 The script `scripts/extract_author_turns.py` filters to your turns only using a configurable author marker. The skill shows you 5 random samples and waits for your confirmation before analysis proceeds.
 
-## Python dependencies
+---
+
+## PYTHON DEPENDENCIES
 
 The base analysis runs on Python stdlib only, with no installs required.
 
@@ -105,7 +123,9 @@ Two optional packages add extended features (install via `pip install -r scripts
 | `textstat` | Readability scores |
 | `spacy` + `en_core_web_sm` | POS-rhythm, dependency depth, passive voice rate |
 
-## Output
+---
+
+## OUTPUT
 
 Running the analysis produces four files per voice profile, plus a standalone report:
 
@@ -133,13 +153,17 @@ The standalone report includes:
 - Notes on interpretation (which register is the primary target, what zero counts mean, corpus limitations)
 - Provenance and re-run instructions
 
-## Universal baseline
+---
+
+## UNIVERSAL BASELINE
 
 Every voice inherits a set of zero-tolerance rules for patterns that AI systems produce by default and that human writers do not. These are in `references/00-universal-baseline.md` and are active regardless of what any individual voice profile specifies.
 
 The baseline removes em dashes as clause separators, stance adverbials ("Importantly,", "Notably,"), filler openers ("It is worth noting that"), unsupported evaluative adjectives ("innovative", "robust"), and performative verb choices ("delve", "leverage", "foster"). These patterns appear in AI-generated text at rates far above any individual human writer's baseline, and removing them is a prerequisite for the voice profile to be meaningful.
 
-## File structure
+---
+
+## FILE STRUCTURE
 
 ```
 write-like-me/
@@ -174,6 +198,8 @@ write-like-me/
       claude-ai-skill.md            # Self-contained export for Claude.ai Skills
 ```
 
-## License
+---
+
+## LICENSE
 
 MIT
