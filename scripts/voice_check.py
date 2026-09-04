@@ -24,7 +24,7 @@ from voice_segment import prose_text, segment  # noqa: E402
 
 import re  # noqa: E402
 
-CITATION_HEADINGS = re.compile(r"^(sources?|references?|bibliography|further reading|see also|citations?|works cited|footnotes?)\b", re.IGNORECASE)
+CITATION_HEADINGS = re.compile(r"^(sources?|references?|bibliography|further reading|see also|related( articles| reading| links| topics)?|citations?|works cited|footnotes?)\b", re.IGNORECASE)
 
 for _s in (sys.stdout, sys.stderr):
     try:

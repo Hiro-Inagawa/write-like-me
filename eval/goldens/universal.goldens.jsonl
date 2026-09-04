@@ -32,3 +32,4 @@
 {"id": "u-pass-013", "text": "Last verified: 2026-09-04", "expect": "pass", "note": "label line with a date is not buildup before data"}
 {"id": "u-pass-014", "text": "The authors called it \"the previous state-of-the-art\" in their paper.", "expect": "pass", "note": "banned adjective inside a direct quote belongs to the quoted author"}
 {"id": "u-pass-015", "text": "# Note\n\nThe method works.\n\n## Sources\n\n- Paper -- arXiv. Clearly innovative.", "expect": "pass", "note": "citation section is skipped by default"}
+{"id": "u-pass-016", "text": "Prose here.\n\n## Related\n\n- [[Safety and Red-Teaming]] -- ../04-ecosystem/safety.md", "expect": "pass", "note": "related-link section is skipped by default"}

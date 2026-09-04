@@ -34,6 +34,10 @@ class CheckTextTests(unittest.TestCase):
         self.assertEqual(check_text(text, DEFAULT_PROFILE, "default")["verdict"], "PASS")
         self.assertEqual(check_text(text, DEFAULT_PROFILE, "default", skip_citations=False)["verdict"], "BLOCK")
 
+    def test_related_link_sections_are_skipped(self):
+        text = "Prose here.\n\n## Related\n\n- [[Safety and Red-Teaming]] -- ../04-ecosystem/safety.md\n"
+        self.assertEqual(check_text(text, DEFAULT_PROFILE, "default")["verdict"], "PASS")
+
     def test_quoted_words_do_not_hit(self):
         text = 'The authors called it "the previous state-of-the-art" in their paper.'
         self.assertEqual(check_text(text, DEFAULT_PROFILE, "default")["verdict"], "PASS")
