@@ -1,0 +1,116 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://write-like-me/templates/profile.schema.json",
+  "title": "Voice Profile",
+  "description": "Documents the shape of a voice profile.json consumed by scripts/voice_profile.py. This schema is documentation only and is not enforced at runtime; runtime validation is performed by validate_profile() in scripts/voice_profile.py.",
+  "type": "object",
+  "required": ["schema_version", "voice", "bans", "registers", "thresholds"],
+  "properties": {
+    "schema_version": {
+      "description": "Profile schema version. Must equal 1.",
+      "type": "integer",
+      "const": 1
+    },
+    "voice": {
+      "description": "Name of the voice this profile describes, e.g. 'universal' or 'hiro'.",
+      "type": "string"
+    },
+    "generated": {
+      "description": "ISO date the profile was generated, or empty string for the shipped default.",
+      "type": "string"
+    },
+    "source": {
+      "description": "Relative path to the source document or corpus this profile was derived from.",
+      "type": "string"
+    },
+    "default_register": {
+      "description": "Name of the register to use when none is specified.",
+      "type": "string"
+    },
+    "thresholds": {
+      "description": "Non-negative numeric thresholds shared across registers.",
+      "type": "object",
+      "properties": {
+        "short_sentence_words": { "type": "number", "minimum": 0 },
+        "staccato_run": { "type": "number", "minimum": 0 },
+        "min_words_for_drift": { "type": "number", "minimum": 0 }
+      },
+      "additionalProperties": {
+        "type": "number",
+        "minimum": 0
+      }
+    },
+    "bans": {
+      "description": "Named lists of banned or flagged phrases, each a list of lowercase strings.",
+      "type": "object",
+      "properties": {
+        "intensifiers": { "$ref": "#/definitions/stringList" },
+        "hedge_connectives": { "$ref": "#/definitions/stringList" },
+        "protest_framing": { "$ref": "#/definitions/stringList" },
+        "meta_commentary": { "$ref": "#/definitions/stringList" },
+        "evaluative_block": { "$ref": "#/definitions/stringList" },
+        "evaluative_review": { "$ref": "#/definitions/stringList" },
+        "extra_phrases": { "$ref": "#/definitions/stringList" }
+      },
+      "additionalProperties": { "$ref": "#/definitions/stringList" }
+    },
+    "registers": {
+      "description": "Named register overrides. Each register merges over DEFAULT_REGISTER; unset keys fall back to the default.",
+      "type": "object",
+      "additionalProperties": { "$ref": "#/definitions/register" }
+    }
+  },
+  "additionalProperties": true,
+  "definitions": {
+    "stringList": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "policyValue": {
+      "description": "Four-state policy used by semicolons, contractions, and questions.",
+      "type": "string",
+      "enum": ["off", "allowed", "review", "forbidden"]
+    },
+    "tristateValue": {
+      "description": "Three-state policy used by announcement_colon, hedge_connectives, meta_commentary, tricolon, and compressed_antithesis.",
+      "type": "string",
+      "enum": ["off", "review", "block"]
+    },
+    "register": {
+      "type": "object",
+      "properties": {
+        "semicolons": { "$ref": "#/definitions/policyValue" },
+        "contractions": { "$ref": "#/definitions/policyValue" },
+        "questions": { "$ref": "#/definitions/policyValue" },
+        "announcement_colon": { "$ref": "#/definitions/tristateValue" },
+        "hedge_connectives": { "$ref": "#/definitions/tristateValue" },
+        "meta_commentary": { "$ref": "#/definitions/tristateValue" },
+        "tricolon": { "$ref": "#/definitions/tristateValue" },
+        "compressed_antithesis": { "$ref": "#/definitions/tristateValue" },
+        "targets": { "$ref": "#/definitions/targets" }
+      },
+      "additionalProperties": false
+    },
+    "targets": {
+      "description": "Numeric stylometric targets for a register. Range keys take a [low, high] pair; max keys take a single non-negative number.",
+      "type": "object",
+      "properties": {
+        "mean_sentence_words": { "$ref": "#/definitions/rangePair" },
+        "pct_long_ge30": { "$ref": "#/definitions/rangePair" },
+        "comma_per_sentence": { "$ref": "#/definitions/rangePair" },
+        "pct_short_le5_max": { "type": "number", "minimum": 0 },
+        "hedge_per_100w_max": { "type": "number", "minimum": 0 },
+        "boost_per_100w_max": { "type": "number", "minimum": 0 },
+        "first_sg_per_100w_max": { "type": "number", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "rangePair": {
+      "description": "A [low, high] pair where low <= high.",
+      "type": "array",
+      "items": { "type": "number" },
+      "minItems": 2,
+      "maxItems": 2
+    }
+  }
+}
