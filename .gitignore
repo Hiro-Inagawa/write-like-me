@@ -1,6 +1,9 @@
 __pycache__/
 *.pyc
 *.pyo
-*.json
 voices/*
 !voices/.gitkeep
+*.stylometry.json
+_STYLE-PROFILE-*.md
+GATES.md
+.unlazy/
