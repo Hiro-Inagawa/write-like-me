@@ -29,3 +29,4 @@
 {"id": "u-pass-010", "text": "See https://example.com/docs for details.", "expect": "pass", "note": "URL colon"}
 {"id": "u-pass-011", "text": "The meeting starts at 14:30.", "expect": "pass", "note": "time colon"}
 {"id": "u-pass-012", "text": "The following three effects: cost, time, and scope.", "expect": "pass", "note": "categorizing noun before colon, list of three is taxonomic"}
+{"id": "u-pass-013", "text": "Last verified: 2026-09-04", "expect": "pass", "note": "label line with a date is not buildup before data"}

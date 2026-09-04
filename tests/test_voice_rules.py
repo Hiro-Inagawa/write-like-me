@@ -62,6 +62,11 @@ class UniversalRuleTests(unittest.TestCase):
         self.assertIn("BUILDUP_BEFORE_DATA", rule_ids("The data tell a consistent story: hedging ranged from 0 to 2.31."))
         self.assertNotIn("BUILDUP_BEFORE_DATA", rule_ids("Hedging ranged from 0 to 2.31 per 100 words."))
 
+    def test_buildup_ignores_label_lines(self):
+        self.assertEqual(rule_ids("Last verified: 2026-09-04"), [])
+        self.assertEqual(rule_ids("Universal eval: 30 goldens, block recall 1.0."), [])
+        self.assertIn("BUILDUP_BEFORE_DATA", rule_ids("The numbers tell the whole story here: 30 goldens passed."))
+
     def test_empty_intensifier(self):
         self.assertIn("EMPTY_INTENSIFIER", rule_ids("The pattern is clearly real and structured."))
 

@@ -157,7 +157,12 @@ def rule_evaluative_adjective(segs, profile, reg):
 
 def rule_buildup_before_data(segs, profile, reg):
     def pred(sent):
-        return re.search(r"[A-Za-z]:\s+\d", sent) is not None or BUILDUP_STORY.search(sent) is not None
+        if BUILDUP_STORY.search(sent):
+            return True
+        m = re.search(r"[A-Za-z]:\s+\d", sent)
+        if m is None:
+            return False
+        return not _is_label_line(sent, m.start() + 1)
     return _sentence_hits(segs, pred, "BUILDUP_BEFORE_DATA", BLOCK, "Buildup before a number. State the number directly.")
 
 
