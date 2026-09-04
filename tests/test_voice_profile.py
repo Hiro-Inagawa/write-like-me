@@ -34,7 +34,7 @@ class ProfileTests(unittest.TestCase):
                  "punctuation": {"comma_per_sentence": 2.0, "semicolon_per_1000w": 0.0},
                  "hedging_booster": {"hedge_per_100w": 0.233, "boost_per_100w": 0.0},
                  "pronouns": {"first_sg_per_100w": 0.28}}
-        profile = init_from_stylometry("hiro", "article-public", stylo)
+        profile = init_from_stylometry("example", "article-public", stylo)
         reg = profile["registers"]["article-public"]
         self.assertEqual(reg["targets"]["mean_sentence_words"], [28, 38])
         self.assertEqual(reg["targets"]["pct_short_le5_max"], 0.0)

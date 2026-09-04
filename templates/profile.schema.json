@@ -12,7 +12,7 @@
       "const": 1
     },
     "voice": {
-      "description": "Name of the voice this profile describes, e.g. 'universal' or 'hiro'.",
+      "description": "Name of the voice this profile describes, e.g. 'universal' or 'professional'.",
       "type": "string"
     },
     "generated": {
