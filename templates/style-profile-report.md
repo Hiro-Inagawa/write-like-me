@@ -1,7 +1,7 @@
-# Stylometric Profile — {{author_name}}
+# Stylometric Profile: {{author_name}}
 
 **Generated:** {{analysis_date}}
-**Corpus:** {{register_count}} registers analyzed separately — {{register_list}}
+**Corpus:** {{register_count}} registers analyzed separately, {{register_list}}
 **Method:** Computational stylometry (stdlib-only base tier). Features: function word frequencies, MATTR, sentence length distribution, punctuation rates, hedging/booster density, pronoun rates, sentence-initial patterns, hapax legomena ratio. See `building-voice-skills/references/03-methodology.md` for full academic grounding.
 
 ---
@@ -36,11 +36,11 @@
 
 ## Notes on Interpretation
 
-**Register matters.** A single averaged corpus number hides the different communication modes. Analyze and interpret each register separately. The primary register ({{primary_register}}) is the writing target — the other registers are reference only.
+**Register matters.** A single averaged corpus number hides the different communication modes. Analyze and interpret each register separately. The primary register ({{primary_register}}) is the writing target. The other registers are reference only.
 
 **Zero counts are hard rules.** A feature that appears 0 times in the primary register is a hard rule, even if the corpus is small. The author has had opportunities to use em-dashes (for example) and has not.
 
-**Hedging calibration.** Hedging density alone is not informative without register context. Calibrated epistemic care — hedging only where genuine uncertainty exists — is more important than absolute rate.
+**Hedging calibration.** Hedging density alone is not informative without register context. Calibrated epistemic care, hedging only where actual uncertainty exists, is more important than absolute rate.
 
 **What this corpus does not capture.** {{coverage_note}}
 

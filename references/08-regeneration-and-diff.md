@@ -1,4 +1,4 @@
-# 08 — Regeneration and Diff
+# 08. Regeneration and Diff
 
 How to update a voice skill when the corpus grows or style changes.
 
@@ -76,10 +76,10 @@ Only update the skill files if the author confirms the style change is real:
 
 ## What NOT to change on re-run
 
-Rules derived from explicit corrections ("never use em dashes — I always remove them") are not invalidated by corpus statistics. If the new corpus contains em-dashes and the author has explicitly stated they don't use them, the corpus has pre-edit material — not a style change.
+Rules derived from explicit corrections ("never use em dashes, I always remove them") are not invalidated by corpus statistics. If the new corpus contains em-dashes and the author has explicitly stated they don't use them, the corpus has pre-edit material, not a style change.
 
 Distinguish between:
-- **Measured feature** — what appears in the corpus (may include editing artifacts)
-- **Stated preference** — what the author explicitly said (higher authority than measurements)
+- **Measured feature**, what appears in the corpus (may include editing artifacts)
+- **Stated preference**, what the author explicitly said (higher authority than measurements)
 
 Stated preferences override measurements when they conflict.

@@ -1,10 +1,10 @@
-# 02 — Corrective Checklist
+# 02. Corrective Checklist
 
 Run this scan on any draft before delivery. Read top to bottom. Stop and fix before continuing.
 
 ---
 
-## Hard bans (zero-tolerance — fix every instance)
+## Hard bans (zero-tolerance, fix every instance)
 
 {{hard_ban_1_name}}. {{hard_ban_1_rule}}
 
@@ -31,7 +31,7 @@ GOOD: {{hard_ban_3_good_example}}
 
 ---
 
-## Soft checks (flag and consider — fix when the pattern dominates)
+## Soft checks (flag and consider, fix when the pattern dominates)
 
 {{soft_check_list}}
 

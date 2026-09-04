@@ -1,4 +1,4 @@
-# 05 — Exemplar Selection
+# 05. Exemplar Selection
 
 How to choose the 3–5 passages that go into the generated skill's `01-generative.md`.
 
@@ -14,7 +14,7 @@ Style-prompting research (Patel et al., 2023) shows that combining a quantitativ
 
 Choose passages that together cover:
 
-1. **The densest concentration of the author's distinctive features.** A passage where sentence length, connective structure, and punctuation patterns are all typical of the author's style — not an outlier.
+1. **The densest concentration of the author's distinctive features.** A passage where sentence length, connective structure, and punctuation patterns are all typical of the author's style, not an outlier.
 
 2. **Different paragraph types.** If the author makes arguments, includes concrete evidence, and draws implications, choose one passage from each category. The exemplar set should not be all the same kind of move.
 

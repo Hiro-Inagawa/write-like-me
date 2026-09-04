@@ -1,4 +1,4 @@
-# 04 — Rule Mining
+# 04. Rule Mining
 
 How to derive style rules from statistics and existing rule files.
 
@@ -14,12 +14,12 @@ Read any rule files the user identified (feedback logs, correction notes, style 
 - Prescriptions: "always", "use", "prefer", "make sure", "should"
 - Corrections: "this is wrong / here is the right version"
 
-These rules have the highest confidence — they represent explicit user intent rather than inference. Record the source for each.
+These rules have the highest confidence. They represent explicit user intent rather than inference. Record the source for each.
 
 **For Hiro's first-run, known source files:**
-- `memory/feedback_punctuation.md` — zero em-dashes, zero semicolons
-- `memory/feedback_colon_style.md` — no announcement colons, no empty intensifiers
-- `__KAIRO/SELF/07_CORRECTIONS.md` — correction log with examples
+- `memory/feedback_punctuation.md`, zero em-dashes, zero semicolons
+- `memory/feedback_colon_style.md`, no announcement colons, no empty intensifiers
+- `__KAIRO/SELF/07_CORRECTIONS.md`, correction log with examples
 
 ---
 
@@ -47,7 +47,7 @@ Look for sentence shapes and patterns that are absent from the corpus:
 
 - **Short sentences for effect.** Does the corpus have any isolated short sentences (< 8 words)? If not, "no staccato sentences for rhetorical punch."
 - **Tricolon constructions.** Does the corpus have runs of three parallel items as a rhetorical device? Count instances of "X, Y, and Z" where all three are syntactically parallel. If rare or absent, "no tricolon constructions."
-- **Rhetorical questions.** Count question marks. If few and only in genuine inquiry (not setup), "no rhetorical questions."
+- **Rhetorical questions.** Count question marks. If few and only in actual inquiry (not setup), "no rhetorical questions."
 - **Second-person instructions.** "You should..." in essay context. If absent, "no instructional second-person in formal prose."
 - **Announcement colons.** "The result: X". If absent, "no announcement colons."
 
@@ -69,9 +69,9 @@ Present all candidate rules to the user at Stage 5. The user approves, rejects, 
 
 Some auto-derived rules are false positives:
 
-- **"Never uses second-person"** in a corpus of only formal essays — the corpus just didn't require second-person, not that the author can't use it.
-- **"Never uses past tense"** in an essay about current research — topic artifact.
-- **"Uses 'that' 40% more than baseline"** — could be a topic effect if the corpus covers a specific subject with many subordinate clauses starting with "that."
+- **"Never uses second-person"** in a corpus of only formal essays. The corpus just didn't require second-person, not that the author can't use it.
+- **"Never uses past tense"** in an essay about current research, a topic artifact.
+- **"Uses 'that' 40% more than baseline"**, could be a topic effect if the corpus covers a specific subject with many subordinate clauses starting with "that."
 
 The user review stage catches these.
 
@@ -79,6 +79,6 @@ The user review stage catches these.
 
 ## What not to include as rules
 
-- Rules about content, argument, or research — the skill is about voice, not ideas.
-- Rules derived from a single unusual sentence — one outlier is not a pattern.
+- Rules about content, argument, or research. The skill is about voice, not ideas.
+- Rules derived from a single unusual sentence. One outlier is not a pattern.
 - Rules that would make the voice impossible to use across topics ("never uses 'research'").

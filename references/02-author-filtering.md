@@ -1,4 +1,4 @@
-# 02 — Author Filtering
+# 02. Author Filtering
 
 How to extract only the author's turns from conversation exports.
 
@@ -71,7 +71,7 @@ python extract_author_turns.py <input_dir> [options]
 
 Claude.ai exports often create duplicate files (`conversation.md`, `conversation_2.md`, `conversation_3.md`) for the same conversation. The script skips files ending in `_2.md`, `_3.md`, etc. by default.
 
-Disable with `--no-dedup` if the numbered files are genuinely different conversations.
+Disable with `--no-dedup` if the numbered files are actually different conversations.
 
 ---
 
@@ -85,7 +85,7 @@ After extracting author turns, each turn is cleaned:
 4. Strip image tags
 5. Strip markdown links (keep link text)
 6. Strip HTML tags
-7. Strip very short turns (< 20 chars) — these are usually "yes", "ok", "thanks"
+7. Strip very short turns (< 20 chars), these are usually "yes", "ok", "thanks"
 
 ---
 
@@ -108,7 +108,7 @@ If these appear in extracted author turns, check whether the export format place
 
 Before writing the full extraction, the script shows 5 random sample turns. Confirm:
 
-- Does the content read like the author's genuine writing?
+- Does the content read like the author's own writing?
 - Are there any obvious AI phrases leaking through?
 - Is the length distribution reasonable (some short, some long)?
 

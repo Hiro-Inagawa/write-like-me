@@ -1,4 +1,4 @@
-# 01 — Corpus Discovery
+# 01. Corpus Discovery
 
 How to find the right source material for a voice skill.
 

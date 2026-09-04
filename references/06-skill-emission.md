@@ -1,4 +1,4 @@
-# 06 — Skill Emission
+# 06. Skill Emission
 
 How to write the generated voice skill files from the approved rules, statistics, and exemplars.
 
@@ -57,7 +57,7 @@ The SKILL.md contains three things:
 
 Sections in order:
 
-1. **Quantitative targets table.** The measured values from the primary register profile. These are not targets to hit precisely — they are the territory to write into. Include: mean sentence length, % long sentences, % short sentences, commas per sentence, em dashes per 1000w, semicolons per 1000w, first-person rate, hedging rate, booster rate.
+1. **Quantitative targets table.** The measured values from the primary register profile. These are not targets to hit precisely. They are the territory to write into. Include: mean sentence length, % long sentences, % short sentences, commas per sentence, em dashes per 1000w, semicolons per 1000w, first-person rate, hedging rate, booster rate.
 
 2. **Structural patterns.** Two to four paragraphs on how sentences, paragraphs, and essays are built. Written in interpretive language, not data. "Long, connected sentences built from subordinate clauses" rather than "mean sentence length 33 words."
 
@@ -73,11 +73,11 @@ Sections in order:
 
 Sections in order:
 
-1. **Hard bans** — zero-tolerance rules, with examples of bad and corrected versions. These are scanned automatically before every delivery.
+1. **Hard bans**, zero-tolerance rules, with examples of bad and corrected versions. These are scanned automatically before every delivery.
 
-2. **Soft checks** — patterns to flag and consider. Not auto-rejected; user decides in context.
+2. **Soft checks**, patterns to flag and consider. Not auto-rejected. User decides in context.
 
-3. **Mechanical scan table** — a grep list. Pattern, target count. The model runs this as a final check before delivering any draft. Only include patterns that are detectable by string matching (em dash `—`, semicolon `;`, specific words like "clearly", "obviously").
+3. **Mechanical scan table**, a grep list. Pattern, target count. The model runs this as a final check before delivering any draft. Only include patterns that are detectable by string matching (em dash `—`, semicolon `;`, specific words like `clearly`, `obviously`).
 
 ---
 
@@ -96,7 +96,7 @@ Record:
 
 ## claude-ai-skill.md
 
-A self-contained voice file for upload to Claude.ai Settings → Customize → Skills. Unlike the Claude Code skill files, this file has no dependencies — everything is inlined.
+A self-contained voice file for upload to Claude.ai Settings → Customize → Skills. Unlike the Claude Code skill files, this file has no dependencies. Everything is inlined.
 
 **What it contains:**
 
@@ -124,7 +124,7 @@ Upload it at Claude.ai → Settings → Customize → Skills, or paste the conte
 
 ## What the generated skill does NOT contain
 
-- Qualitative phrases without evidence ("writes in a direct, honest style") — these have near-zero effect and clutter the file
-- Quantitative numbers without interpretation ("em-dash rate: 0.000/1000w") — these should be translated to interpretive rules ("never uses em-dashes")
+- Qualitative phrases without evidence ("writes in a direct, honest style"), these have near-zero effect and clutter the file
+- Quantitative numbers without interpretation ("em-dash rate of 0.000/1000w"), these should be translated to interpretive rules ("never uses em-dashes")
 - Rules that were rejected in Stage 5 user review
-- Content about topics, arguments, or research — only voice
+- Content about topics, arguments, or research, only voice

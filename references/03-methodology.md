@@ -1,4 +1,4 @@
-# 03 — Methodology Reference
+# 03. Methodology Reference
 
 A formal record of the analytical methods used by this skill. This document exists so that:
 
@@ -26,15 +26,15 @@ Raw markdown files contain structural elements (code blocks, tables, frontmatter
 
 ### Function word frequency profiles
 
-**Grounding:** Mosteller & Wallace (1964) established in their analysis of the Federalist Papers that function word frequencies are author-distinctive and topic-invariant — they do not shift with subject matter the way content words do. Burrows (2002) formalized this into the Delta method for authorship attribution.
+**Grounding:** Mosteller & Wallace (1964) established in their analysis of the Federalist Papers that function word frequencies are author-distinctive and topic-invariant. They do not shift with subject matter the way content words do. Burrows (2002) formalized this into the Delta method for authorship attribution.
 
 **Implementation:** Frequencies of ~75 English function words, normalized per 1000 words. The top 50 by corpus frequency are reported.
 
-**Interpretation:** The function word profile captures the unconscious grammar of how an author structures sentences — how often they use articles, prepositions, conjunctions, modal verbs. This is the most stable individual marker across stylometric research.
+**Interpretation:** The function word profile captures the unconscious grammar of how an author structures sentences. It reflects how often they use articles, prepositions, conjunctions, modal verbs. This is the most stable individual marker across stylometric research.
 
 ### Lexical richness: MATTR
 
-**Grounding:** Standard type-token ratio (TTR) is biased by text length — longer texts produce lower TTR mechanically. Covington & McFall (2010) proposed Moving Average Type-Token Ratio (MATTR), which computes TTR in a sliding window and averages the results, removing the length bias.
+**Grounding:** Standard type-token ratio (TTR) is biased by text length. Longer texts produce lower TTR mechanically. Covington & McFall (2010) proposed Moving Average Type-Token Ratio (MATTR), which computes TTR in a sliding window and averages the results, removing the length bias.
 
 **Implementation:** Window size 100 words. MATTR of 1.0 = every word in every window is unique. MATTR of ~0.7 is typical for educated English prose.
 
@@ -64,7 +64,7 @@ Raw markdown files contain structural elements (code blocks, tables, frontmatter
 
 **Grounding:** Halliday & Hasan (1976), *Cohesion in English*, established the foundational taxonomy of discourse connectives: additive (and, also, moreover), adversative (but, however, yet), causal (because, therefore, since), and temporal (then, when, after). This taxonomy was operationalized computationally by the Coh-Metrix project (McNamara, Graesser, McCarthy & Cai, 2014).
 
-**Implementation:** Word-list-based rate calculation per 1000 words, split by connective type. The ratio of causal to additive connectives is particularly informative — writers who argue causally use "because/therefore/since" more than "also/furthermore."
+**Implementation:** Word-list-based rate calculation per 1000 words, split by connective type. The ratio of causal to additive connectives is particularly informative. Writers who argue causally use "because/therefore/since" more than "also/furthermore."
 
 ### Concession rate
 
@@ -76,7 +76,7 @@ Raw markdown files contain structural elements (code blocks, tables, frontmatter
 
 ### Hedging and boosting
 
-**Grounding:** The hedging/booster distinction originates in epistemic stance research (Chafe & Nichols, 1986; Biber & Finegan, 1988). Hedges reduce commitment to a claim ("might", "possibly", "appears to"), while boosters increase it ("certainly", "clearly", "always"). The ratio of hedges to boosters, and their calibration to actual evidence strength, is a marker of epistemic care (Hyland, 1998, *Hedging in Scientific Research Articles*).
+**Grounding:** The hedging/booster distinction originates in epistemic stance research (Chafe & Nichols, 1986; Biber & Finegan, 1988). Hedges reduce commitment to a claim ("might", "possibly", "appears to"), while boosters increase it (`certainly`, `clearly`, `always`). The ratio of hedges to boosters, and their calibration to actual evidence strength, is a marker of epistemic care (Hyland, 1998, *Hedging in Scientific Research Articles*).
 
 **Implementation:** Word-list-based frequency counts, normalized per 100 words. Hedge list includes modal verbs (might, may, could), adverbs (perhaps, possibly, roughly, somewhat), and specific phrases ("I think", "in a sense").
 
@@ -86,10 +86,10 @@ Raw markdown files contain structural elements (code blocks, tables, frontmatter
 
 **Grounding:** Pennebaker, Boyd, Jordan & Blackburn (2015), *The Development and Psychometric Properties of LIWC2015*, established empirically validated categories for language that reflects different cognitive modes. We implement four:
 
-- **Causation markers** (because, effect, hence, consequently, result, reason, cause) — indicate reasoning-from-mechanism writing
-- **Insight markers** (think, know, consider, realize, understand, believe) — indicate reflective, inference-based writing
-- **Discrepancy markers** (should, would, could, ought, must, if, unless) — indicate conditional and counterfactual reasoning
-- **Certainty markers** (always, never, definitely, certainly, truly) — indicate committed assertions
+- **Causation markers** (because, effect, hence, consequently, result, reason, cause), indicating reasoning-from-mechanism writing
+- **Insight markers** (think, know, consider, realize, understand, believe), indicating reflective, inference-based writing
+- **Discrepancy markers** (should, would, could, ought, must, if, unless), indicating conditional and counterfactual reasoning
+- **Certainty markers** (always, never, definitely, certainly, truly), indicating committed assertions
 
 **Implementation status:** Planned addition to `stylometry.py`. Currently the hedge/booster analysis partially covers this but does not use the full LIWC taxonomy.
 
@@ -103,7 +103,7 @@ Raw markdown files contain structural elements (code blocks, tables, frontmatter
 
 ## Register analysis
 
-**Grounding:** Biber (1988), *Variation Across Speech and Writing*, established that texts cluster into registers based on co-occurring linguistic features. Different registers have different baselines for all features — a register label is required to interpret any stylometric number meaningfully. Calling a sentence "short" requires knowing the register context.
+**Grounding:** Biber (1988), *Variation Across Speech and Writing*, established that texts cluster into registers based on co-occurring linguistic features. Different registers have different baselines for all features. A register label is required to interpret any stylometric number meaningfully. Calling a sentence "short" requires knowing the register context.
 
 **Implementation:** Three registers are identified for the hiro-voice analysis: article-public, paper-formal, conversation-casual. Each register is analyzed separately to produce register-specific baselines.
 
@@ -127,7 +127,7 @@ Raw markdown files contain structural elements (code blocks, tables, frontmatter
 
 2. **Author-extraction accuracy.** Conversation export filtering relies on structural markers in the export format. Formats that do not use heading-style author markers (e.g., some plain-text exports) require custom extraction logic.
 
-3. **Single-user corpus.** The hiro-voice profile is derived from a single author's writing. It cannot distinguish between features that are idiosyncratic to this author and features that are common to educated academic English prose in general — a general English baseline comparison is not currently implemented.
+3. **Single-user corpus.** The hiro-voice profile is derived from a single author's writing. It cannot distinguish between features that are idiosyncratic to this author and features that are common to educated academic English prose in general. A general English baseline comparison is not currently implemented.
 
 4. **Temporal coverage.** The conversation corpus covers December 2025 through April 2026. Any stylistic drift before or after this period is not captured.
 
@@ -175,7 +175,7 @@ Mendenhall, T. C. (1887). The characteristic curves of composition. *Science, 9*
 
 Mosteller, F., & Wallace, D. L. (1964). *Inference and disputed authorship: The Federalist*. Addison-Wesley.
 
-Patel, K., et al. (2023). Stylistic prompting: Controlling style in language model outputs via quantified feature constraints. [Preprint — specific citation to be verified against arXiv at publication.]
+Patel, K., et al. (2023). Stylistic prompting: Controlling style in language model outputs via quantified feature constraints. [Preprint, specific citation to be verified against arXiv at publication.]
 
 Pennebaker, J. W., Boyd, R. L., Jordan, K., & Blackburn, K. (2015). *The development and psychometric properties of LIWC2015*. University of Texas at Austin.
 

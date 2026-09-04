@@ -1,4 +1,4 @@
-# 01 — Generative Patterns
+# 01. Generative Patterns
 
 Read this file when writing new prose. It defines what to build toward.
 
@@ -6,7 +6,7 @@ Read this file when writing new prose. It defines what to build toward.
 
 ## Quantitative targets ({{primary_register}} register)
 
-These numbers describe {{author_name}}'s polished prose, derived from corpus analysis. They are not constraints to hit precisely — they are the territory to write into.
+These numbers describe {{author_name}}'s polished prose, derived from corpus analysis. They are not constraints to hit precisely. They are the territory to write into.
 
 | Feature | Target |
 |---------|--------|

@@ -63,13 +63,13 @@ These numbers describe {{author_name}}'s polished prose. They are not constraint
 
 ---
 
-## Hard bans (zero-tolerance — fix every instance before delivering)
+## Hard bans (zero-tolerance, fix every instance before delivering)
 
 {{hard_bans_inline}}
 
 ---
 
-## Soft checks (flag and consider — fix when the pattern dominates)
+## Soft checks (flag and consider, fix when the pattern dominates)
 
 {{soft_checks_inline}}
 
@@ -81,10 +81,10 @@ These patterns appear in AI-generated text at rates far above any individual hum
 
 **Zero tolerance:**
 - Em dashes `—` as clause separators (use a period, comma, or parenthetical instead)
-- Stance adverbials opening sentences: "Importantly,", "Notably,", "Interestingly,", "Crucially,", "Significantly,"
-- Filler openers: "It is worth noting that", "It is important to note that", "It goes without saying that", "Needless to say"
-- Unsupported evaluative adjectives before nouns without showing the evidence: "innovative", "robust", "significant", "powerful", "fascinating", "groundbreaking"
-- Performative verb choices: "delve", "leverage", "foster", "harness", "underscore", "embark"
+- Stance adverbials opening sentences: `Importantly,` `Notably,` `Interestingly,` `Crucially,` `Significantly,`
+- Filler openers: `It is worth noting that` / `It is important to note that` / `It goes without saying that` / `Needless to say`
+- Unsupported evaluative adjectives before nouns without showing the evidence: `innovative` / `robust` / `significant` / `powerful` / `fascinating` / `groundbreaking`
+- Performative verb choices: `delve` / `leverage` / `foster` / `harness` / `underscore` / `embark`
 - Tricolon as rhetorical device: three-item lists used for rhythm rather than enumeration ("X, Y, and Z" as drama)
 
 ---

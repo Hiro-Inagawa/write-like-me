@@ -61,6 +61,6 @@ These gate every output. No draft leaves without passing all three.
 
 ## What this skill does not do
 
-- Does not select the appropriate register — user specifies (or primary register is assumed).
+- Does not select the appropriate register. User specifies (or primary register is assumed).
 - Does not generate citations, data, or arguments from scratch. It writes in voice; it does not research.
-- Does not adjust for non-English prose — all rules apply to English text only.
+- Does not adjust for non-English prose. All rules apply to English text only.

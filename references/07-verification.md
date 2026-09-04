@@ -1,4 +1,4 @@
-# 07 — Verification
+# 07. Verification
 
 How to confirm the generated skill actually produces text that matches the corpus.
 
@@ -63,12 +63,12 @@ Report each check as pass or fail. For failed checks, state:
 
 ## Iteration
 
-If more than one check fails, revise the relevant file and run one more generation test. Do not iterate more than twice — if the skill fails repeatedly on the same check, the rule may need to be rephrased as a harder constraint rather than a soft guide.
+If more than one check fails, revise the relevant file and run one more generation test. Do not iterate more than twice. If the skill fails repeatedly on the same check, the rule may need to be rephrased as a harder constraint rather than a soft guide.
 
 ---
 
 ## What verification does not test
 
-- Whether the generated text is good writing — that is the author's judgment
-- Whether the voice is indistinguishable from the author — stylometric methods have detection limits
-- Whether the skill handles unusual registers or edge cases — it is calibrated to the primary register only
+- Whether the generated text is good writing, that is the author's judgment
+- Whether the voice is indistinguishable from the author, stylometric methods have detection limits
+- Whether the skill handles unusual registers or edge cases, it is calibrated to the primary register only

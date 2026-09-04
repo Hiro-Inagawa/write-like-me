@@ -1,4 +1,4 @@
-# 03 — Corpus Source and Provenance
+# 03. Corpus Source and Provenance
 
 ---
 
@@ -20,8 +20,8 @@
 
 ## Tool versions
 
-- `building-voice-skills/scripts/stylometry.py` — {{stylometry_version}}
-- `building-voice-skills/scripts/extract_author_turns.py` — {{extraction_version}}
+- `building-voice-skills/scripts/stylometry.py`, {{stylometry_version}}
+- `building-voice-skills/scripts/extract_author_turns.py`, {{extraction_version}}
 - Python {{python_version}}
 
 ---
@@ -30,9 +30,9 @@
 
 Rules in `01-generative.md` and `02-corrective.md` were derived from:
 
-1. **Existing feedback records** — {{rule_source_files}}
-2. **Corpus statistics** — {{derived_rules_summary}}
-3. **Qualitative observation** — {{qualitative_sources}}
+1. **Existing feedback records**, {{rule_source_files}}
+2. **Corpus statistics**, {{derived_rules_summary}}
+3. **Qualitative observation**, {{qualitative_sources}}
 
 ---
 
