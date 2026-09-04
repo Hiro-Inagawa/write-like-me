@@ -37,7 +37,9 @@ Keep at least the two most recent snapshots. This allows reverting if the new pr
 
 1. Re-run `stylometry.py` on the updated corpus with the same register labels and `--output` paths.
 2. Run `generate_report_from_json.py` with the new JSON files alongside the old JSON files from the snapshot directory.
-3. Compute the diff between new and old profiles on these key features:
+3. Diff the machine-readable profile itself, using the snapshot copy as `old.json` and the freshly regenerated one as `new.json`, with `git diff --no-index old.json new.json`. Read every changed line before touching the prose files.
+4. Re-run the eval gate against the previous baseline before accepting the regenerated profile, using the snapshot's `eval-baseline.json` rather than one produced by the new profile, with `python eval/voice_eval.py score --goldens goldens.jsonl --gate eval-baseline.json`. A gate failure means the candidate profile catches less or flags more than the one it would replace, and the regeneration stops there until the profile or the goldens are fixed.
+5. Compute the diff between new and old profiles on these key features:
 
 | Feature | Significant change threshold |
 |---------|------------------------------|

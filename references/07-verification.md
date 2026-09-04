@@ -35,18 +35,20 @@ Example: if the held-out sample is about stochastic individuality in AI, the tes
 
 ## Falsifiable checks
 
+The mechanical half of this comparison (banned characters, banned tokens, staccato runs, and the drift metrics) is executed by `scripts/voice_check.py` and scored against the profile targets by `eval/voice_eval.py`. The held-out generation test above remains as described, run by hand in a fresh session.
+
 Compare the generated paragraph against the held-out sample on these metrics:
 
-| Check | Pass condition |
-|-------|----------------|
-| Em dashes | Generated count matches corpus rule (0 if rule says zero) |
-| Semicolons | Generated count matches corpus rule (0 if rule says zero) |
-| Announcement colons | Generated count matches corpus rule |
-| Mean sentence length | Within ±10 words of corpus mean |
-| Short sentences | No consecutive short sentences if corpus shows none |
-| Boosters | Zero if corpus shows zero boosters in primary register |
-| Hedge density | Within 0.1/100w of corpus mean |
-| Concession rate | Generated paragraph has at least one "but/however/though" construction if corpus concession rate > 0.15 |
+| Check | Pass condition | Verified by |
+|-------|----------------|-------------|
+| Em dashes | Generated count matches corpus rule (0 if rule says zero) | Automated, `EM_DASH` in `voice_check.py` |
+| Semicolons | Generated count matches corpus rule (0 if rule says zero) | Automated, `SEMICOLON_PROSE` in `voice_check.py` |
+| Announcement colons | Generated count matches corpus rule | Automated, `ANNOUNCEMENT_COLON` in `voice_check.py` |
+| Mean sentence length | Within ±10 words of corpus mean | Automated, `DRIFT_mean_sentence_words` scored by `voice_eval.py` |
+| Short sentences | No consecutive short sentences if corpus shows none | Automated, `STACCATO_RUN` plus the short-sentence drift line |
+| Boosters | Zero if corpus shows zero boosters in primary register | Automated, booster drift line scored by `voice_eval.py` |
+| Hedge density | Within 0.1/100w of corpus mean | Automated, hedge drift line scored by `voice_eval.py` |
+| Concession rate | Generated paragraph has at least one "but/however/though" construction if corpus concession rate > 0.15 | Manual, no detector in the rule catalogue covers concession framing |
 
 ---
 
