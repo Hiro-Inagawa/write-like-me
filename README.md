@@ -59,7 +59,7 @@ Type-token ratio (MATTR, window 100), function word frequencies, hapax legomena 
 Sentence length distribution (mean, median, standard deviation, quartiles), comma rate per sentence, em-dash / semicolon / colon / parenthetical rates per 1,000 words, concession rate, sentence-initial word patterns.
 
 **Hedging and stance:**<br>
-Hedging token density (might, perhaps, possibly, roughly, appears to), booster token density (clearly, certainly, definitely, very), first-person singular and plural rates, second-person rate.
+Hedging token density (might, perhaps, possibly, roughly, appears to), booster token density (`clearly`, certainly, definitely, very), first-person singular and plural rates, second-person rate.
 
 **Structural:**<br>
 Paragraph length distribution, heading density, bullet ratio.
@@ -73,6 +73,8 @@ Two optional tiers add readability scores (Flesch-Kincaid, Gunning Fog) via `tex
 - [Claude Code](https://claude.ai/code)
 - Python 3.8+
 - A writing corpus of at least 20,000 words (50,000 or more recommended for reliable distributions)
+
+The draft checker (`voice_check.py`) needs only Python 3.8+. It has no installs and no dependencies of its own.
 
 The skill accepts writing from any of these sources:
 
@@ -127,14 +129,17 @@ Two optional packages add extended features (install via `pip install -r scripts
 
 ## OUTPUT
 
-Running the analysis produces four files per voice profile, plus a standalone report:
+Running the analysis produces seven files per voice profile, plus a standalone report:
 
 ```
 voices/<your-name>/
-  01-generative.md      # Quantitative targets, structural patterns, exemplars — read when writing
-  02-corrective.md      # Hard bans, soft checks, mechanical scan table — read after writing
-  03-corpus-source.md   # Provenance: what was analyzed, when, with what filters
-  claude-ai-skill.md    # Self-contained export for Claude.ai Skills upload
+  01-generative.md       # Quantitative targets, structural patterns, exemplars, useful when writing
+  02-corrective.md       # Hard bans, soft checks, mechanical scan table, useful after writing
+  03-corpus-source.md    # Provenance, what was analyzed, when, with what filters
+  claude-ai-skill.md     # Self-contained export for Claude.ai Skills upload
+  profile.json            # Rules for the draft checker, in machine-readable form
+  goldens.jsonl            # Golden examples for evaluating the checker against this voice
+  eval-baseline.json       # Recorded metrics the checker is graded against on future changes
 
 _STYLE-PROFILE-<DATE>.md   # Human-readable stylometric report (place this wherever you like)
 ```
@@ -155,11 +160,29 @@ The standalone report includes:
 
 ---
 
+## CHECKING A DRAFT
+
+Every voice now ships with a deterministic checker. Run it on any draft:
+
+    python scripts/voice_check.py draft.md --profile voices/<your-name>/profile.json
+
+It prints every hit with a line number and a fix, then a verdict. `block` hits are zero-tolerance rules from your profile and the universal baseline. `review` hits are patterns with documented exceptions, so you decide. The exit code is 1 on a block, which makes the checker usable as a gate in scripts, hooks, and CI. Without `--profile` it runs the universal anti-AI baseline only, which works on any text.
+
+## EVALUATING THE CHECKER
+
+The checker is itself tested against golden passages, so a rule change cannot silently loosen or over-flag:
+
+    python eval/voice_eval.py score --goldens eval/goldens/universal.goldens.jsonl --gate eval/baselines/universal.json
+
+Each voice gets its own `goldens.jsonl` built from the rule examples you approved during the build. The metrics that matter are `block_recall` (does it catch what it must) and `false_alarm_rate` (does it flag what it must not).
+
+---
+
 ## UNIVERSAL BASELINE
 
 Every voice inherits a set of zero-tolerance rules for patterns that AI systems produce by default and that human writers do not. These are in `references/00-universal-baseline.md` and are active regardless of what any individual voice profile specifies.
 
-The baseline removes em dashes as clause separators, stance adverbials ("Importantly,", "Notably,"), filler openers ("It is worth noting that"), unsupported evaluative adjectives ("innovative", "robust"), and performative verb choices ("delve", "leverage", "foster"). These patterns appear in AI-generated text at rates far above any individual human writer's baseline, and removing them is a prerequisite for the voice profile to be meaningful.
+The baseline removes em dashes as clause separators, stance adverbials (`Importantly,`, `Notably,`), filler openers (`It is worth noting that`), unsupported evaluative adjectives (`innovative`, `robust`), and performative verb choices (`delve`, `leverage`, `foster`). These patterns appear in AI-generated text at rates far above any individual human writer's baseline, and removing them is a prerequisite for the voice profile to be meaningful.
 
 ---
 
@@ -183,12 +206,26 @@ write-like-me/
     stylometry.py                   # Feature extraction
     extract_author_turns.py         # Author-turn filter for conversation exports
     generate_report_from_json.py    # Report generator from JSON profiles
+    voice_segment.py                # Markdown draft to prose segments, with line numbers
+    voice_rules.py                  # Deterministic detectors, parameterized by profile
+    voice_profile.py                # Load, validate, and initialize profile.json
+    voice_check.py                  # CLI checker, prints hits and a verdict, sets exit code
     requirements.txt                # Optional Python dependencies
+  eval/
+    voice_eval.py                   # Scores goldens, saves baselines, runs the regression gate
+    README.md                       # Golden format and metrics
+    goldens/
+      universal.goldens.jsonl       # Ships with the repo
+    baselines/
+      universal.json                # Ships with the repo
+  tests/                            # Unit tests, fixtures, and a negative control for the checker
   templates/
     generated-01-generative.md      # Skeleton for write-time guidance
     generated-02-corrective.md      # Skeleton for post-write checklist
     generated-03-corpus-source.md   # Skeleton for provenance file
     generated-claude-ai-skill.md    # Skeleton for the Claude.ai Skills export
+    generated-goldens.jsonl         # Skeleton for a voice's goldens file
+    profile.schema.json             # Documented shape of profile.json
     style-profile-report.md         # Skeleton for the standalone report
   voices/                           # Your voice profiles live here (not committed to git)
     <your-name>/
@@ -196,6 +233,9 @@ write-like-me/
       02-corrective.md              # Post-write checklist (Claude Code)
       03-corpus-source.md           # Provenance (Claude Code)
       claude-ai-skill.md            # Self-contained export for Claude.ai Skills
+      profile.json                  # Rules for the draft checker
+      goldens.jsonl                 # Golden examples for evaluating the checker
+      eval-baseline.json            # Recorded metrics for the regression gate
 ```
 
 ---
