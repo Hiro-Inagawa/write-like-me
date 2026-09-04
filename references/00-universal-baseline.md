@@ -89,3 +89,35 @@ These patterns are documented as systematic outputs of large language models tra
 - Performative verbs ("leverage", "foster") appear at high rates in the training data for formal-sounding text
 
 None of these patterns appear at high rates in the writing of individual human authors analyzed across their actual output. They are population-level artifacts, not individual style. This baseline removes them so the voice profile can describe what the writer actually does, rather than what the model would do by default.
+
+---
+
+## What is enforced by code
+
+Every rule below runs through `scripts/voice_check.py` on a draft and is scored against golden examples by `eval/voice_eval.py`. The severity column is the universal default before any profile applies an override. A profile can raise a `review` rule to `block`, or turn an `off` rule on through the listed knob.
+
+| Rule id | Detects | Universal severity | Profile knob |
+| --- | --- | --- | --- |
+| `EM_DASH` | Em dash or a double-hyphen clause separator | block | none |
+| `STANCE_OPENER` | Sentence opens with a stance adverbial such as honestly or notably | block | none |
+| `FILLER_OPENER` | Sentence opens with a filler phrase such as it is worth noting that | block | none |
+| `PERFORMATIVE_VERB` | Performative verb choices such as delve, leverage, foster, utilize, elucidate | block | none |
+| `NOT_ONLY_BUT_ALSO` | The not only X but also Y construction in one sentence | block | none |
+| `SUMMARY_OPENER` | Paragraph opens with a summary phrase such as in conclusion | block | none |
+| `EVALUATIVE_ADJECTIVE` | An unsupported evaluative adjective from the block list, placed before a noun | block | `bans.evaluative_block` |
+| `EVALUATIVE_ADJECTIVE_SOFT` | An unsupported evaluative adjective from the review list, placed before a noun | review | `bans.evaluative_review` |
+| `SEMICOLON_PROSE` | Semicolon inside a prose paragraph | off | `register.semicolons` = forbidden |
+| `ANNOUNCEMENT_COLON` | Mid-sentence colon introducing a clause | review | `register.announcement_colon` = block |
+| `STACCATO_RUN` | A run of consecutive short sentences at or above the staccato threshold | review | block when `targets.pct_short_le5_max` is 0 |
+| `TRICOLON` | Three short comma-separated items joined by and or or | review | `register.tricolon` |
+| `COMPRESSED_ANTITHESIS` | A ", not X." tag or a rather than construction | review | `register.compressed_antithesis` |
+| `PROTEST_FRAMING` | A protest-framing phrase such as this is not a gimmick | review | `bans.protest_framing` |
+| `BUILDUP_BEFORE_DATA` | A colon directly followed by a number mid-sentence, or a "tells a story" phrase | block | none |
+| `EMPTY_INTENSIFIER` | An empty intensifier such as clearly, obviously, or genuinely | block | `bans.intensifiers` |
+| `HEDGE_CONNECTIVE` | A hedge connective such as that said or worth knowing | review | `register.hedge_connectives` = block |
+| `CONTRACTION` | A contraction from the closed detection list | off | `register.contractions` = forbidden |
+| `RHETORICAL_QUESTION` | A question mark in prose | off | `register.questions` = forbidden gives review, block escalates further |
+| `META_COMMENTARY` | A meta-commentary phrase such as great question or hope this helps | off | `register.meta_commentary` = block |
+| `DRIFT_*` | Sentence length, sentence-length distribution, comma rate, hedge density, booster density, and first-person density measured against the profile targets | review | `register.targets` |
+
+Judgment rules stay manual. Whether a sentence carries information, whether a passive opening reads worse than the active version, and whether a tricolon is rhetorical rather than taxonomic are calls a script cannot make, and this table does not claim otherwise.

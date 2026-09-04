@@ -16,9 +16,26 @@ The generated skill lives at `~/.claude/skills/<name>-voice/`:
     02-corrective.md        # Hard bans + scan-for list (read after writing)
     03-corpus-source.md     # Provenance
   claude-ai-skill.md        # Self-contained export for Claude.ai Skills upload
+  profile.json               # Machine-readable rule set consumed by scripts/voice_check.py
+  goldens.jsonl               # Approved BAD/GOOD examples turned into scored test cases
+  eval-baseline.json          # Saved eval score used as the regression gate
 ```
 
 Use the templates in `templates/` as skeletons. Fill in the corpus-specific data.
+
+---
+
+## profile.json
+
+Holds the machine-readable version of the approved rules, the `bans` word lists and the per-register `registers` policy, keyed to the rule ids documented in `references/00-universal-baseline.md`. It is what `scripts/voice_check.py` and `eval/voice_eval.py` load at run time, in place of the prose in `02-corrective.md`. Produced by `python scripts/voice_profile.py init --voice <name> --register <primary-register> --from-stylometry <register>.stylometry.json --output profile.json`, then hand-edited so the `bans` and `registers` sections match the rules approved in Stage 5. Validated by `python scripts/voice_profile.py validate profile.json` before it is used as a gate.
+
+## goldens.jsonl
+
+Holds one JSON object per line for every approved BAD and GOOD example from `02-corrective.md`, in the format documented in Part B.5 of the implementation plan. A BAD example becomes a golden with `expect` set to `block` or `review`, a GOOD example becomes a golden with `expect` set to `pass`. Written by hand against `templates/generated-goldens.jsonl` as a starting skeleton, then consumed by `python eval/voice_eval.py baseline` to produce the first saved score and by `python eval/voice_eval.py score` on every later run.
+
+## eval-baseline.json
+
+Holds the saved `block_recall`, `false_alarm_rate`, and per-rule hit counts from the first passing run against `goldens.jsonl`. Produced by `python eval/voice_eval.py baseline --goldens goldens.jsonl --profile profile.json --output eval-baseline.json`. Every later change to the profile or the rule code is checked against this file with `python eval/voice_eval.py score --goldens goldens.jsonl --gate eval-baseline.json`, and the gate fails if recall drops or false alarms rise past the stored tolerance.
 
 ---
 
