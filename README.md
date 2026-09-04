@@ -1,5 +1,13 @@
 ![Write Like Me. Rows of robots writing at desks under a neon sign reading WRITE LIKE ME](docs/write-like-me.webp)
 
+[![checks](https://github.com/Hiro-Inagawa/write-like-me/actions/workflows/checks.yml/badge.svg)](https://github.com/Hiro-Inagawa/write-like-me/actions/workflows/checks.yml)
+
+**Try it in ten seconds.** Clone the repo and run the checker on any Markdown or text file. No profile, no installs, Python 3.8+ only:
+
+    python scripts/voice_check.py your-draft.md
+
+It prints every em dash, filler phrase, hedge, and AI tell with a line number and a fix, then a verdict. Building your own voice profile comes after, if you want it.
+
 A Claude Code skill that analyzes how you write and generates a personalized voice profile for writing and revising prose. It uses linguistic and psychological measurement methods rather than subjective descriptions to capture your actual style from a corpus of your own writing.
 
 **New in v2 (September 2026).** The skill now ships a deterministic checker. After a draft is written, `python scripts/voice_check.py draft.md --profile voices/<name>/profile.json` reports every violation with a line number and a fix, and exits non-zero on a hard rule, so the voice is enforced by code instead of by asking the model to be careful. Each voice also gets a machine-readable `profile.json` and a golden test set, and an eval harness gates every rule change. Details are in the sections "Checking a draft" and "Evaluating the checker" below, and in [CHANGELOG.md](CHANGELOG.md).
