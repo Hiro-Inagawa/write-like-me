@@ -31,6 +31,7 @@ class Segment:
     line: int
     kind: str
     text: str
+    heading: str = ""
 
 
 def normalize_inline(line: str) -> str:
@@ -56,11 +57,12 @@ def segment(text: str) -> list:
                 segs.append(Segment(k + 1, "code", lines[k]))
             start = end + 1
     para, para_start, in_code = [], None, False
+    current_heading = ""
 
     def flush():
         nonlocal para, para_start
         if para:
-            segs.append(Segment(para_start, "prose", " ".join(para)))
+            segs.append(Segment(para_start, "prose", " ".join(para), current_heading))
         para, para_start = [], None
 
     for idx in range(start, len(lines)):
@@ -80,7 +82,8 @@ def segment(text: str) -> list:
             continue
         if HEADING.match(raw):
             flush()
-            segs.append(Segment(n, "heading", normalize_inline(HEADING.sub("", raw))))
+            current_heading = normalize_inline(HEADING.sub("", raw))
+            segs.append(Segment(n, "heading", current_heading, current_heading))
             continue
         if TABLE.match(raw) or RULE.match(raw):
             flush()
@@ -88,7 +91,7 @@ def segment(text: str) -> list:
             continue
         if BULLET.match(raw):
             flush()
-            segs.append(Segment(n, "bullet", normalize_inline(BULLET.sub("", raw))))
+            segs.append(Segment(n, "bullet", normalize_inline(BULLET.sub("", raw)), current_heading))
             continue
         if not para:
             para_start = n

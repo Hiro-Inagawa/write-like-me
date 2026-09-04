@@ -52,6 +52,14 @@ class Hit:
     message: str
 
 
+QUOTED = re.compile(r'"[^"\n]{1,400}"')
+
+
+def _in_quotes(text, pos):
+    """True when pos falls inside a double-quoted span, so quoted words are someone else's."""
+    return any(m.start() < pos < m.end() for m in QUOTED.finditer(text))
+
+
 def _excerpt(text, pos, width=40):
     lo, hi = max(0, pos - width // 2), min(len(text), pos + width // 2)
     return text[lo:hi].strip()
@@ -65,6 +73,8 @@ def _phrase_hits(segs, phrases, rule, severity, message, kinds=PROSE_KINDS):
         low = seg.text.lower()
         for phrase in phrases:
             for m in re.finditer(r"(?<![A-Za-z])" + re.escape(phrase.lower()) + r"(?![A-Za-z])", low):
+                if _in_quotes(seg.text, m.start()):
+                    continue
                 hits.append(Hit(rule, severity, seg.line, _excerpt(seg.text, m.start()), message % phrase))
     return hits
 
@@ -143,6 +153,8 @@ def _adjective_hits(segs, words, rule, severity):
             for m in re.finditer(r"\b" + re.escape(word) + r"\s+(?=[A-Za-z])", seg.text, re.IGNORECASE):
                 before = seg.text[max(0, m.start() - 14):m.start()].lower()
                 if word == "significant" and "statistically" in before:
+                    continue
+                if _in_quotes(seg.text, m.start()):
                     continue
                 hits.append(Hit(rule, severity, seg.line, _excerpt(seg.text, m.start()),
                                 "'%s' asserts a judgment. Replace it with the fact that earns it." % word))

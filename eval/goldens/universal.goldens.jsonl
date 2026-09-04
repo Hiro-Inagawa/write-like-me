@@ -30,3 +30,5 @@
 {"id": "u-pass-011", "text": "The meeting starts at 14:30.", "expect": "pass", "note": "time colon"}
 {"id": "u-pass-012", "text": "The following three effects: cost, time, and scope.", "expect": "pass", "note": "categorizing noun before colon, list of three is taxonomic"}
 {"id": "u-pass-013", "text": "Last verified: 2026-09-04", "expect": "pass", "note": "label line with a date is not buildup before data"}
+{"id": "u-pass-014", "text": "The authors called it \"the previous state-of-the-art\" in their paper.", "expect": "pass", "note": "banned adjective inside a direct quote belongs to the quoted author"}
+{"id": "u-pass-015", "text": "# Note\n\nThe method works.\n\n## Sources\n\n- Paper -- arXiv. Clearly innovative.", "expect": "pass", "note": "citation section is skipped by default"}

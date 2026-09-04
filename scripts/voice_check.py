@@ -22,6 +22,10 @@ from voice_profile import DEFAULT_PROFILE, load_profile, resolve_register, valid
 from voice_rules import BLOCK, REVIEW, run_rules  # noqa: E402
 from voice_segment import prose_text, segment  # noqa: E402
 
+import re  # noqa: E402
+
+CITATION_HEADINGS = re.compile(r"^(sources?|references?|bibliography|further reading|see also|citations?|works cited|footnotes?)\b", re.IGNORECASE)
+
 for _s in (sys.stdout, sys.stderr):
     try:
         _s.reconfigure(encoding="utf-8")
@@ -64,9 +68,11 @@ def compute_drift(text: str, profile: dict, reg: dict) -> list:
     return drift
 
 
-def check_text(text: str, profile: dict, register: str, draft_name: str = "-") -> dict:
+def check_text(text: str, profile: dict, register: str, draft_name: str = "-", skip_citations: bool = True) -> dict:
     reg = resolve_register(profile, register)
     segs = segment(text)
+    if skip_citations:
+        segs = [s for s in segs if not CITATION_HEADINGS.match(s.heading or "")]
     hits = run_rules(segs, profile, reg)
     drift = compute_drift(prose_text(segs), profile, reg)
     counts = {}
@@ -112,6 +118,8 @@ def main(argv=None) -> int:
     parser.add_argument("--json", action="store_true", help="Print the JSON result instead of the table")
     parser.add_argument("--strict", action="store_true", help="Treat review hits and drift as blocking")
     parser.add_argument("--quiet", action="store_true", help="Print only the final token")
+    parser.add_argument("--check-citations", action="store_true",
+                        help="Also check text under Sources, References, and similar headings (skipped by default)")
     args = parser.parse_args(argv)
 
     try:
@@ -132,7 +140,7 @@ def main(argv=None) -> int:
                 print("ERROR: " + err)
             return 2
     register = args.register or profile.get("default_register", "default")
-    result = check_text(text, profile, register, args.draft)
+    result = check_text(text, profile, register, args.draft, skip_citations=not args.check_citations)
     if args.strict and result["verdict"] == "REVIEW":
         result["verdict"] = "BLOCK"
     if args.json:

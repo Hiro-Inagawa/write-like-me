@@ -29,6 +29,16 @@ class CheckTextTests(unittest.TestCase):
         self.assertEqual(result["verdict"], "PASS")
         self.assertEqual(result["hits"], [])
 
+    def test_citation_sections_are_skipped_by_default(self):
+        text = "# Title\n\nClean prose here.\n\n## Sources\n\n- Paper -- arXiv, 2024. Clearly innovative work.\n"
+        self.assertEqual(check_text(text, DEFAULT_PROFILE, "default")["verdict"], "PASS")
+        self.assertEqual(check_text(text, DEFAULT_PROFILE, "default", skip_citations=False)["verdict"], "BLOCK")
+
+    def test_quoted_words_do_not_hit(self):
+        text = 'The authors called it "the previous state-of-the-art" in their paper.'
+        self.assertEqual(check_text(text, DEFAULT_PROFILE, "default")["verdict"], "PASS")
+        self.assertEqual(check_text("This state-of-the-art tool is fast.", DEFAULT_PROFILE, "default")["verdict"], "BLOCK")
+
     def test_drift_reports_review_when_targets_exist(self):
         profile = json.loads(json.dumps(DEFAULT_PROFILE))
         profile["thresholds"]["min_words_for_drift"] = 10
