@@ -104,6 +104,11 @@ class ProfileRuleTests(unittest.TestCase):
         hits = hits_for("The capabilities are the same, the knowledge the same, and the values the same.")
         self.assertTrue(any(h.rule == "TRICOLON" and h.severity == "review" for h in hits))
 
+    def test_asyndetic_tricolon_is_review(self):
+        hits = hits_for("The capabilities are the same, the knowledge the same, the apparent values the same.")
+        self.assertTrue(any(h.rule == "TRICOLON" and h.severity == "review" for h in hits))
+        self.assertEqual(rule_ids("We measured cost, time, scope."), [])
+
     def test_compressed_antithesis(self):
         self.assertIn("COMPRESSED_ANTITHESIS", rule_ids("Accuracy comes from structure, not prompting."))
         self.assertIn("COMPRESSED_ANTITHESIS", rule_ids("Engineered for citation rather than clicks."))

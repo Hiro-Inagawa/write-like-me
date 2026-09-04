@@ -14,6 +14,7 @@
 {"id": "u-soft-001", "text": "This robust approach reduces time.", "expect": "review", "rules": ["EVALUATIVE_ADJECTIVE_SOFT"]}
 {"id": "u-hedge-001", "text": "That said, the plan holds.", "expect": "review", "rules": ["HEDGE_CONNECTIVE"]}
 {"id": "u-tricolon-001", "text": "The capabilities are the same, the knowledge the same, and the values the same.", "expect": "review", "rules": ["TRICOLON"]}
+{"id": "u-tricolon-002", "text": "The capabilities are the same, the knowledge the same, the apparent values the same.", "expect": "review", "rules": ["TRICOLON"], "note": "asyndetic tricolon without a conjunction"}
 {"id": "u-antith-001", "text": "Accuracy comes from structure, not prompting.", "expect": "review", "rules": ["COMPRESSED_ANTITHESIS"]}
 {"id": "u-protest-001", "text": "None of this is invented from scratch.", "expect": "review", "rules": ["PROTEST_FRAMING"]}
 {"id": "u-pass-001", "text": "Two respects: the cost and the time.", "expect": "pass", "note": "colon after a number introduces a list"}

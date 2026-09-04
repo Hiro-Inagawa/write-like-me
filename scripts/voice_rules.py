@@ -37,6 +37,7 @@ CONTRACTION = re.compile(
     r"they're|they've|they'll|they'd|he's|she's|it's|that's|there's|here's|what's|who's|let's|"
     r"it'll|that'll|there'll)\b", re.IGNORECASE)
 TRICOLON = re.compile(r"\b(\w+(?: \w+){0,3}), (\w+(?: \w+){0,3}), (?:and|or) (\w+(?: \w+){0,3})\b")
+TRICOLON_ASYNDETIC = re.compile(r"\b(\w+(?: \w+){1,4}), (\w+(?: \w+){1,4}), (\w+(?: \w+){1,4})[.!?]\s*$")
 ANTITHESIS_TAG = re.compile(r", not [^,.;:]{1,40}[.!?]|\brather than\b", re.IGNORECASE)
 BUILDUP_STORY = re.compile(r"\btells? an? \w+ story\b", re.IGNORECASE)
 COLON_MID = re.compile(r"(?<=[A-Za-z\)\"'])\s*:\s+(?=[A-Za-z\"'(])")
@@ -243,7 +244,7 @@ def rule_tricolon(segs, profile, reg):
     level = reg.get("tricolon", REVIEW)
     if level == "off":
         return []
-    pred = lambda s: TRICOLON.search(s) is not None
+    pred = lambda s: TRICOLON.search(s) is not None or TRICOLON_ASYNDETIC.search(s) is not None
     return _sentence_hits(segs, pred, "TRICOLON", level, "Three parallel items. Keep only if the list is taxonomic.", kinds=("prose",))
 
 
