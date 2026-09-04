@@ -1,0 +1,30 @@
+# Universal baseline goldens. One JSON object per line. Comments start with #.
+{"id": "u-em-001", "text": "The weights are fixed — but the execution is not.", "expect": "block", "rules": ["EM_DASH"], "note": "em dash as clause separator"}
+{"id": "u-em-002", "text": "Fixed -- but not really.", "expect": "block", "rules": ["EM_DASH"], "note": "double hyphen"}
+{"id": "u-stance-001", "text": "Importantly, the results held across all conditions.", "expect": "block", "rules": ["STANCE_OPENER"]}
+{"id": "u-stance-002", "text": "Honestly, this approach has limits.", "expect": "block", "rules": ["STANCE_OPENER"]}
+{"id": "u-filler-001", "text": "It is worth noting that the data shows variation.", "expect": "block", "rules": ["FILLER_OPENER"]}
+{"id": "u-verb-001", "text": "This paper delves into the relationship between X and Y.", "expect": "block", "rules": ["PERFORMATIVE_VERB"]}
+{"id": "u-verb-002", "text": "We leverage existing infrastructure to reduce cost.", "expect": "block", "rules": ["PERFORMATIVE_VERB"]}
+{"id": "u-notonly-001", "text": "The model is not only accurate but also fast.", "expect": "block", "rules": ["NOT_ONLY_BUT_ALSO"]}
+{"id": "u-summary-001", "text": "In conclusion, the approach reduces cost.", "expect": "block", "rules": ["SUMMARY_OPENER"]}
+{"id": "u-eval-001", "text": "This innovative approach reduces computation time.", "expect": "block", "rules": ["EVALUATIVE_ADJECTIVE"]}
+{"id": "u-buildup-001", "text": "The data tell a consistent story: hedging ranged from 0 to 2.31.", "expect": "block", "rules": ["BUILDUP_BEFORE_DATA"]}
+{"id": "u-intens-001", "text": "The pattern is clearly real and structured.", "expect": "block", "rules": ["EMPTY_INTENSIFIER"]}
+{"id": "u-soft-001", "text": "This robust approach reduces time.", "expect": "review", "rules": ["EVALUATIVE_ADJECTIVE_SOFT"]}
+{"id": "u-hedge-001", "text": "That said, the plan holds.", "expect": "review", "rules": ["HEDGE_CONNECTIVE"]}
+{"id": "u-tricolon-001", "text": "The capabilities are the same, the knowledge the same, and the values the same.", "expect": "review", "rules": ["TRICOLON"]}
+{"id": "u-antith-001", "text": "Accuracy comes from structure, not prompting.", "expect": "review", "rules": ["COMPRESSED_ANTITHESIS"]}
+{"id": "u-protest-001", "text": "None of this is invented from scratch.", "expect": "review", "rules": ["PROTEST_FRAMING"]}
+{"id": "u-pass-001", "text": "Two respects: the cost and the time.", "expect": "pass", "note": "colon after a number introduces a list"}
+{"id": "u-pass-002", "text": "Between 2020–2024 the rate fell.", "expect": "pass", "note": "en dash in a range"}
+{"id": "u-pass-003", "text": "The results were surprisingly stable across runs.", "expect": "pass", "note": "stance word not in opener position"}
+{"id": "u-pass-004", "text": "- item one; item two", "expect": "pass", "note": "semicolon inside a bullet"}
+{"id": "u-pass-005", "text": "Accuracy increased from 71% to 89%.", "expect": "pass", "note": "number stated directly"}
+{"id": "u-pass-006", "text": "The approach reduces computation time by 40%.", "expect": "pass", "note": "fact instead of adjective"}
+{"id": "u-pass-007", "text": "The difference is statistically significant at p below 0.01.", "expect": "pass", "note": "significant with its statistical meaning"}
+{"id": "u-pass-008", "text": "The genome defines the range, but execution determines where within it any individual lands.", "expect": "pass", "note": "full-sentence contrast is allowed"}
+{"id": "u-pass-009", "text": "Status: Current", "expect": "pass", "note": "label line"}
+{"id": "u-pass-010", "text": "See https://example.com/docs for details.", "expect": "pass", "note": "URL colon"}
+{"id": "u-pass-011", "text": "The meeting starts at 14:30.", "expect": "pass", "note": "time colon"}
+{"id": "u-pass-012", "text": "The following three effects: cost, time, and scope.", "expect": "pass", "note": "categorizing noun before colon, list of three is taxonomic"}
