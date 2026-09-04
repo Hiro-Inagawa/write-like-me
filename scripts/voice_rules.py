@@ -210,7 +210,7 @@ def rule_announcement_colon(segs, profile, reg):
                 head_words = re.findall(r"[A-Za-z]+|\d+", head.lower())
                 if not head_words:
                     continue
-                if head_words[-1].isdigit() or any(w in LIST_INTRO_WORDS for w in head_words):
+                if head_words[-1].isdigit() or any(w in LIST_INTRO_WORDS for w in head_words[-3:]):
                     continue
                 if re.search(r"\d$", head):
                     continue

@@ -88,6 +88,7 @@ class ProfileRuleTests(unittest.TestCase):
         self.assertEqual(rule_ids("Two respects: the cost and the time.", register=reg), [])
         self.assertEqual(rule_ids("The following three effects: cost and time.", register=reg), [])
         self.assertEqual(rule_ids("Status: Current", register=reg), [])
+        self.assertIn("ANNOUNCEMENT_COLON", rule_ids("These results show one thing: the model fails.", register=reg))
         self.assertEqual(rule_ids("See https://example.com/x for the file.", register=reg), [])
         self.assertEqual(rule_ids("The meeting is at 14:30 today.", register=reg), [])
 
