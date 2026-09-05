@@ -34,3 +34,6 @@
 {"id": "u-pass-015", "text": "# Note\n\nThe method works.\n\n## Sources\n\n- Paper -- arXiv. Clearly innovative.", "expect": "pass", "note": "citation section is skipped by default"}
 {"id": "u-pass-016", "text": "Prose here.\n\n## Related\n\n- [[Safety and Red-Teaming]] -- ../04-ecosystem/safety.md", "expect": "pass", "note": "related-link section is skipped by default"}
 {"id": "u-colon-002", "text": "The pattern across my career has been the same design discipline: accuracy under pressure, trust in the data, and interfaces that stay out of the way.", "expect": "review", "rules": ["ANNOUNCEMENT_COLON"], "note": "elaboration colon after a full clause is review, never block"}
+{"id": "u-pass-017", "text": "**Date:** March 20, 2026\n**Role:** Staff Product Designer\n**Company:** Dropbox\n\nReal prose here.", "expect": "pass", "note": "metadata label lines are not prose"}
+{"id": "u-pass-018", "text": "Restricted zones would be clearly marked on the plan.", "expect": "pass", "note": "clearly as a manner adverb before a visibility participle"}
+{"id": "u-pass-019", "text": "**We are looking for someone who can leverage AI. Tell us about it!**\n\nMy answer is short.", "expect": "pass", "note": "a fully bold line is a quoted prompt or heading, not prose"}

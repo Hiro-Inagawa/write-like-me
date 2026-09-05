@@ -28,6 +28,7 @@ DEFAULT_REGISTER = {
     "meta_commentary": "off",
     "tricolon": "review",
     "compressed_antithesis": "review",
+    "empty_intensifiers": "block",
     "targets": {},
 }
 
@@ -106,7 +107,7 @@ def validate_profile(profile: dict) -> list:
             elif key in ("semicolons", "contractions", "questions"):
                 if value not in POLICY:
                     errors.append("registers.%s.%s must be one of %s" % (name, key, ", ".join(POLICY)))
-            elif key in ("announcement_colon", "hedge_connectives", "meta_commentary", "tricolon", "compressed_antithesis"):
+            elif key in ("announcement_colon", "hedge_connectives", "meta_commentary", "tricolon", "compressed_antithesis", "empty_intensifiers"):
                 if value not in TRISTATE:
                     errors.append("registers.%s.%s must be one of %s" % (name, key, ", ".join(TRISTATE)))
             else:

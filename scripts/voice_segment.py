@@ -17,6 +17,8 @@ HEADING = re.compile(r"^\s{0,3}#{1,6}\s+")
 BULLET = re.compile(r"^\s*(?:[-*+]|\d+[.)])\s+")
 TABLE = re.compile(r"^\s*\|")
 RULE = re.compile(r"^\s*(?:[-*_]\s*){3,}$")
+LABEL = re.compile(r"^\s*(?:\*\*|__)?[A-Z][A-Za-z ]{0,24}:(?:\*\*|__)?\s+\S")
+FULL_BOLD = re.compile(r"^\s*\*\*[^*].*\*\*\s*$")
 INLINE_CODE = re.compile(r"`[^`\n]+`")
 LINK = re.compile(r"\[([^\]]+)\]\([^)]+\)")
 IMAGE = re.compile(r"!\[[^\]]*\]\([^)]*\)")
@@ -88,6 +90,10 @@ def segment(text: str) -> list:
         if TABLE.match(raw) or RULE.match(raw):
             flush()
             segs.append(Segment(n, "table", raw))
+            continue
+        if LABEL.match(raw) or FULL_BOLD.match(raw):
+            flush()
+            segs.append(Segment(n, "label", normalize_inline(raw), current_heading))
             continue
         if BULLET.match(raw):
             flush()

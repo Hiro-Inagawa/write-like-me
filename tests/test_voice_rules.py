@@ -70,6 +70,16 @@ class UniversalRuleTests(unittest.TestCase):
     def test_empty_intensifier(self):
         self.assertIn("EMPTY_INTENSIFIER", rule_ids("The pattern is clearly real and structured."))
 
+    def test_clearly_as_manner_adverb_is_allowed(self):
+        self.assertEqual(rule_ids("Restricted zones would be clearly marked on the plan."), [])
+        self.assertIn("EMPTY_INTENSIFIER", rule_ids("The zones are clearly the problem."))
+
+    def test_empty_intensifiers_register_policy(self):
+        reg = forbidding(empty_intensifiers="review")
+        hits = hits_for("I think that is fascinating.", register=reg)
+        self.assertEqual([(h.rule, h.severity) for h in hits], [("EMPTY_INTENSIFIER", "review")])
+        self.assertEqual(rule_ids("I think that is fascinating.", register=forbidding(empty_intensifiers="off")), [])
+
     def test_hedge_connective_reviews_by_default(self):
         hits = hits_for("That said, the plan holds.")
         self.assertEqual(hits[0].rule, "HEDGE_CONNECTIVE")

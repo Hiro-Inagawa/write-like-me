@@ -44,6 +44,12 @@ class SegmentTests(unittest.TestCase):
         segs = segment("Use `foo — bar` and [text](http://x) here.")
         self.assertEqual(segs[0].text, "Use code and text here.")
 
+    def test_label_and_bold_lines_are_not_prose(self):
+        segs = segment("**Date:** March 20, 2026\n**Role:** Staff Designer\n\n**Tell us about your experience!**\n\nReal prose here.\n")
+        kinds = [s.kind for s in segs if s.kind != "blank"]
+        self.assertEqual(kinds, ["label", "label", "label", "prose"])
+        self.assertEqual([s.text for s in segs if s.kind == "prose"], ["Real prose here."])
+
     def test_sentences(self):
         self.assertEqual(sentences_of("One here. Two here! Three?"), ["One here.", "Two here!", "Three?"])
 

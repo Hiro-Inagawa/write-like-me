@@ -41,6 +41,8 @@ TRICOLON_ASYNDETIC = re.compile(r"\b(\w+(?: \w+){1,4}), (\w+(?: \w+){1,4}), (\w+
 ANTITHESIS_TAG = re.compile(r", not [^,.;:]{1,40}[.!?]|\brather than\b", re.IGNORECASE)
 BUILDUP_STORY = re.compile(r"\btells? an? \w+ story\b", re.IGNORECASE)
 ANNOUNCEMENT_HEAD_WORDS = 5
+MANNER_AFTER = re.compile(r"\s+(marked|labeled|labelled|visible|defined|separated|stated|shown|identified|"
+                          r"indicated|delineated|legible|distinguishable|distinguished|written|documented|signposted)\b")
 COLON_MID = re.compile(r"(?<=[A-Za-z\)\"'])\s*:\s+(?=[A-Za-z\"'(])")
 
 
@@ -75,6 +77,8 @@ def _phrase_hits(segs, phrases, rule, severity, message, kinds=PROSE_KINDS):
         for phrase in phrases:
             for m in re.finditer(r"(?<![A-Za-z])" + re.escape(phrase.lower()) + r"(?![A-Za-z])", low):
                 if _in_quotes(seg.text, m.start()):
+                    continue
+                if rule == "EMPTY_INTENSIFIER" and MANNER_AFTER.match(low, m.end()):
                     continue
                 hits.append(Hit(rule, severity, seg.line, _excerpt(seg.text, m.start()), message % phrase))
     return hits
@@ -180,7 +184,10 @@ def rule_buildup_before_data(segs, profile, reg):
 
 
 def rule_empty_intensifier(segs, profile, reg):
-    return _phrase_hits(segs, profile.get("bans", {}).get("intensifiers", []), "EMPTY_INTENSIFIER", BLOCK,
+    level = reg.get("empty_intensifiers", BLOCK)
+    if level == "off":
+        return []
+    return _phrase_hits(segs, profile.get("bans", {}).get("intensifiers", []), "EMPTY_INTENSIFIER", level,
                         "Empty intensifier '%s'. Remove it.")
 
 
