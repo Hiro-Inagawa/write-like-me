@@ -2,6 +2,29 @@
 
 All notable changes to Write Like Me. Versions are git tags and GitHub Releases.
 
+## 2.0.10 (2026-09-04)
+
+- New rule `EXCLAMATION` flags an exclamation mark that ends a prose sentence. Off by default, turned on per register with `exclamations` set to review or block.
+
+## 2.0.9 (2026-09-04)
+
+- A line that ends in a colon closes its own segment, so a lead-in colon before a list is not read as an announcement colon.
+
+## 2.0.8 (2026-09-04)
+
+- Label detection no longer treats a line whose head starts with a determiner as a label, so `The result: variation increases.` is caught again.
+
+## 2.0.7 (2026-09-04)
+
+- Label lines such as `**Date:** March 20, 2026` and fully bold lines are segmented as labels, never as prose.
+- `clearly` before a visibility participle such as marked, visible, or labeled is a manner adverb and no longer an empty intensifier.
+- New register key `empty_intensifiers` (off, review, block) sets the severity of the empty intensifier rule per register.
+
+## 2.0.6 (2026-09-04)
+
+- The announcement colon rule blocks only when the text before the colon is five words or fewer. A colon after a full clause that introduces an elaboration scores as review.
+- New profile key `rule_overrides` maps a rule id to off, review, or block for one voice.
+
 ## 2.0.5 (2026-09-04)
 
 - Sections headed Related, Related articles, Related reading, and similar are skipped like citation sections.

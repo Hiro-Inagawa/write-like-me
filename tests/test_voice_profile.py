@@ -41,6 +41,13 @@ class ProfileTests(unittest.TestCase):
         self.assertEqual(reg["semicolons"], "forbidden")
         self.assertEqual(validate_profile(profile), [])
 
+    def test_validate_exclamations_key(self):
+        profile = json.loads(json.dumps(DEFAULT_PROFILE))
+        profile["registers"] = {"letter": {"exclamations": "block"}}
+        self.assertEqual(validate_profile(profile), [])
+        profile["registers"] = {"letter": {"exclamations": "never"}}
+        self.assertTrue(any("exclamations" in e for e in validate_profile(profile)))
+
     def test_validate_rule_overrides(self):
         profile = json.loads(json.dumps(DEFAULT_PROFILE))
         profile["rule_overrides"] = {"EM_DASH": "review"}

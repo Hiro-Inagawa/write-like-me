@@ -117,6 +117,7 @@ Every rule below runs through `scripts/voice_check.py` on a draft and is scored 
 | `HEDGE_CONNECTIVE` | A hedge connective such as that said or worth knowing | review | `register.hedge_connectives` = block |
 | `CONTRACTION` | A contraction from the closed detection list | off | `register.contractions` = forbidden |
 | `RHETORICAL_QUESTION` | A question mark in prose | off | `register.questions` = forbidden gives review, block escalates further |
+| `EXCLAMATION` | An exclamation mark ending a prose sentence | off | `register.exclamations` = review or block |
 | `META_COMMENTARY` | A meta-commentary phrase such as great question or hope this helps | off | `register.meta_commentary` = block |
 | `DRIFT_*` | Sentence length, sentence-length distribution, comma rate, hedge density, booster density, and first-person density measured against the profile targets | review | `register.targets` |
 

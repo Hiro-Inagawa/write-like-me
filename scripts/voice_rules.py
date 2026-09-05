@@ -319,6 +319,14 @@ def rule_questions(segs, profile, reg):
     return _sentence_hits(segs, pred, "RHETORICAL_QUESTION", REVIEW, "Question in prose. Resolve the tension instead of staging it.", kinds=("prose",))
 
 
+def rule_exclamation(segs, profile, reg):
+    level = reg.get("exclamations", "off")
+    if level == "off":
+        return []
+    pred = lambda s: s.rstrip().endswith("!")
+    return _sentence_hits(segs, pred, "EXCLAMATION", level, "Exclamation mark in prose. End the sentence with a period.", kinds=("prose",))
+
+
 def rule_meta_commentary(segs, profile, reg):
     level = reg.get("meta_commentary", "off")
     if level == "off":
@@ -337,7 +345,7 @@ RULES = (
     rule_summary_opener, rule_evaluative_adjective, rule_buildup_before_data, rule_empty_intensifier,
     rule_hedge_connective, rule_semicolon, rule_announcement_colon, rule_staccato_run, rule_tricolon,
     rule_compressed_antithesis, rule_protest_framing, rule_contractions, rule_questions,
-    rule_meta_commentary, rule_extra_phrases,
+    rule_exclamation, rule_meta_commentary, rule_extra_phrases,
 )
 
 

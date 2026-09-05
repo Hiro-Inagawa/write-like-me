@@ -166,6 +166,14 @@ class ProfileRuleTests(unittest.TestCase):
         self.assertEqual(hits[0].rule, "RHETORICAL_QUESTION")
         self.assertEqual(hits[0].severity, "review")
 
+    def test_exclamations_by_register(self):
+        self.assertEqual(rule_ids("We shipped it on Friday!"), [])
+        hits = hits_for("We shipped it on Friday!", register=forbidding(exclamations="review"))
+        self.assertEqual([(h.rule, h.severity) for h in hits], [("EXCLAMATION", "review")])
+        hits = hits_for("We shipped it on Friday!", register=forbidding(exclamations="block"))
+        self.assertEqual([(h.rule, h.severity) for h in hits], [("EXCLAMATION", "block")])
+        self.assertEqual(rule_ids("We shipped it on Friday.", register=forbidding(exclamations="block")), [])
+
     def test_meta_commentary_when_blocked(self):
         reg = forbidding(meta_commentary="block")
         self.assertIn("META_COMMENTARY", rule_ids("Great question, let me know if you need more.", register=reg))
