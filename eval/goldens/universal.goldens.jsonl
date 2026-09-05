@@ -37,3 +37,4 @@
 {"id": "u-pass-017", "text": "**Date:** March 20, 2026\n**Role:** Staff Product Designer\n**Company:** Dropbox\n\nReal prose here.", "expect": "pass", "note": "metadata label lines are not prose"}
 {"id": "u-pass-018", "text": "Restricted zones would be clearly marked on the plan.", "expect": "pass", "note": "clearly as a manner adverb before a visibility participle"}
 {"id": "u-pass-019", "text": "**We are looking for someone who can leverage AI. Tell us about it!**\n\nMy answer is short.", "expect": "pass", "note": "a fully bold line is a quoted prompt or heading, not prose"}
+{"id": "u-colon-003", "text": "The result: variation increases.", "expect": "review", "rules": ["ANNOUNCEMENT_COLON"], "note": "the canonical announcement colon, review at universal level, block when a profile says so"}

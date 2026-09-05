@@ -107,6 +107,12 @@ class ProfileRuleTests(unittest.TestCase):
         self.assertEqual(rule_ids("See https://example.com/x for the file.", register=reg), [])
         self.assertEqual(rule_ids("The meeting is at 14:30 today.", register=reg), [])
 
+    def test_canonical_short_announcement_is_caught(self):
+        reg = forbidding(announcement_colon="block")
+        self.assertIn("ANNOUNCEMENT_COLON", rule_ids("The result: variation increases.", register=reg))
+        self.assertEqual(rule_ids("Status: Current", register=reg), [])
+        self.assertEqual(rule_ids("Last verified: 2026-09-04", register=reg), [])
+
     def test_announcement_colon_severity_by_head_length(self):
         reg = forbidding(announcement_colon="block")
         short = hits_for("The result is predictable: variation increases.", register=reg)

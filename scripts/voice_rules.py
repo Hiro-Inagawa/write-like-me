@@ -213,8 +213,17 @@ def rule_semicolon(segs, profile, reg):
     return hits
 
 
+LABEL_HEAD_DETERMINERS = {"the", "this", "that", "these", "those", "a", "an", "our", "my", "its",
+                          "their", "his", "her", "your", "one", "every", "each"}
+
+
 def _is_label_line(text, pos):
-    return len(text[:pos].split()) <= 3 and text[:pos].strip() == text[:pos].strip().rstrip(":")
+    head = text[:pos].split()
+    if not head or len(head) > 3:
+        return False
+    if head[0].lower() in LABEL_HEAD_DETERMINERS:
+        return False
+    return text[:pos].strip() == text[:pos].strip().rstrip(":")
 
 
 def rule_announcement_colon(segs, profile, reg):
