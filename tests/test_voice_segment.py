@@ -50,6 +50,10 @@ class SegmentTests(unittest.TestCase):
         self.assertEqual(kinds, ["label", "label", "label", "prose"])
         self.assertEqual([s.text for s in segs if s.kind == "prose"], ["Real prose here."])
 
+    def test_lead_in_colon_line_closes_its_segment(self):
+        segs = [s for s in segment("This translates to:\nthe next line of text.\n") if s.kind == "prose"]
+        self.assertEqual([s.text for s in segs], ["This translates to:", "the next line of text."])
+
     def test_sentences(self):
         self.assertEqual(sentences_of("One here. Two here! Three?"), ["One here.", "Two here!", "Three?"])
 

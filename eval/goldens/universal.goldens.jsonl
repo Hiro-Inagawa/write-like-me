@@ -38,3 +38,4 @@
 {"id": "u-pass-018", "text": "Restricted zones would be clearly marked on the plan.", "expect": "pass", "note": "clearly as a manner adverb before a visibility participle"}
 {"id": "u-pass-019", "text": "**We are looking for someone who can leverage AI. Tell us about it!**\n\nMy answer is short.", "expect": "pass", "note": "a fully bold line is a quoted prompt or heading, not prose"}
 {"id": "u-colon-003", "text": "The result: variation increases.", "expect": "review", "rules": ["ANNOUNCEMENT_COLON"], "note": "the canonical announcement colon, review at universal level, block when a profile says so"}
+{"id": "u-pass-020", "text": "This translates to:\nthe next line of the list.", "expect": "pass", "note": "a lead-in colon at the end of a line introduces what follows"}

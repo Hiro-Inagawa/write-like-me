@@ -103,6 +103,8 @@ def segment(text: str) -> list:
         if not para:
             para_start = n
         para.append(normalize_inline(raw))
+        if raw.rstrip().endswith(":"):
+            flush()
     flush()
     return segs
 

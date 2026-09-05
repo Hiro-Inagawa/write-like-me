@@ -113,6 +113,10 @@ class ProfileRuleTests(unittest.TestCase):
         self.assertEqual(rule_ids("Status: Current", register=reg), [])
         self.assertEqual(rule_ids("Last verified: 2026-09-04", register=reg), [])
 
+    def test_lead_in_colon_at_line_end_is_not_announcement(self):
+        reg = forbidding(announcement_colon="block")
+        self.assertEqual(rule_ids("This translates to:\nA short list follows here.", register=reg), [])
+
     def test_announcement_colon_severity_by_head_length(self):
         reg = forbidding(announcement_colon="block")
         short = hits_for("The result is predictable: variation increases.", register=reg)
