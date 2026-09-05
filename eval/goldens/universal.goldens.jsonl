@@ -33,3 +33,4 @@
 {"id": "u-pass-014", "text": "The authors called it \"the previous state-of-the-art\" in their paper.", "expect": "pass", "note": "banned adjective inside a direct quote belongs to the quoted author"}
 {"id": "u-pass-015", "text": "# Note\n\nThe method works.\n\n## Sources\n\n- Paper -- arXiv. Clearly innovative.", "expect": "pass", "note": "citation section is skipped by default"}
 {"id": "u-pass-016", "text": "Prose here.\n\n## Related\n\n- [[Safety and Red-Teaming]] -- ../04-ecosystem/safety.md", "expect": "pass", "note": "related-link section is skipped by default"}
+{"id": "u-colon-002", "text": "The pattern across my career has been the same design discipline: accuracy under pressure, trust in the data, and interfaces that stay out of the way.", "expect": "review", "rules": ["ANNOUNCEMENT_COLON"], "note": "elaboration colon after a full clause is review, never block"}

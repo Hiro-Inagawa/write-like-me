@@ -7,7 +7,7 @@ the profile bans. Stdlib only.
 """
 import re
 import sys
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -40,6 +40,7 @@ TRICOLON = re.compile(r"\b(\w+(?: \w+){0,3}), (\w+(?: \w+){0,3}), (?:and|or) (\w
 TRICOLON_ASYNDETIC = re.compile(r"\b(\w+(?: \w+){1,4}), (\w+(?: \w+){1,4}), (\w+(?: \w+){1,4})[.!?]\s*$")
 ANTITHESIS_TAG = re.compile(r", not [^,.;:]{1,40}[.!?]|\brather than\b", re.IGNORECASE)
 BUILDUP_STORY = re.compile(r"\btells? an? \w+ story\b", re.IGNORECASE)
+ANNOUNCEMENT_HEAD_WORDS = 5
 COLON_MID = re.compile(r"(?<=[A-Za-z\)\"'])\s*:\s+(?=[A-Za-z\"'(])")
 
 
@@ -232,8 +233,11 @@ def rule_announcement_colon(segs, profile, reg):
                     continue
                 if re.search(r"\d$", head):
                     continue
-                hits.append(Hit("ANNOUNCEMENT_COLON", level, seg.line, _excerpt(sent, pos),
-                                "Colon announces a clause. Write the sentence instead."))
+                short_head = len(head_words) <= ANNOUNCEMENT_HEAD_WORDS
+                severity = level if (short_head or level != BLOCK) else REVIEW
+                message = ("Announcement colon after a short head. Write the sentence instead." if short_head
+                           else "Colon introduces an elaboration. Keep it only if the sentence needs it.")
+                hits.append(Hit("ANNOUNCEMENT_COLON", severity, seg.line, _excerpt(sent, pos), message))
     return hits
 
 
@@ -321,8 +325,25 @@ RULES = (
 )
 
 
+def apply_overrides(hits, profile):
+    """profile.rule_overrides maps a rule id to off, review, or block for this voice."""
+    overrides = profile.get("rule_overrides") or {}
+    if not overrides:
+        return hits
+    out = []
+    for h in hits:
+        level = overrides.get(h.rule)
+        if level == "off":
+            continue
+        if level in (REVIEW, BLOCK) and level != h.severity:
+            h = replace(h, severity=level)
+        out.append(h)
+    return out
+
+
 def run_rules(segs, profile, reg):
     hits = []
     for rule in RULES:
         hits.extend(rule(segs, profile, reg))
+    hits = apply_overrides(hits, profile)
     return sorted(hits, key=lambda h: (h.line, h.rule))

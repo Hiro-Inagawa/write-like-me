@@ -41,6 +41,13 @@ class ProfileTests(unittest.TestCase):
         self.assertEqual(reg["semicolons"], "forbidden")
         self.assertEqual(validate_profile(profile), [])
 
+    def test_validate_rule_overrides(self):
+        profile = json.loads(json.dumps(DEFAULT_PROFILE))
+        profile["rule_overrides"] = {"EM_DASH": "review"}
+        self.assertEqual(validate_profile(profile), [])
+        profile["rule_overrides"] = {"EM_DASH": "maybe"}
+        self.assertTrue(any("rule_overrides" in e for e in validate_profile(profile)))
+
     def test_load_profile_round_trip(self):
         with tempfile.TemporaryDirectory() as d:
             p = Path(d) / "profile.json"

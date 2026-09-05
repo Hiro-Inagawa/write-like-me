@@ -97,6 +97,19 @@ class ProfileRuleTests(unittest.TestCase):
         self.assertEqual(rule_ids("See https://example.com/x for the file.", register=reg), [])
         self.assertEqual(rule_ids("The meeting is at 14:30 today.", register=reg), [])
 
+    def test_announcement_colon_severity_by_head_length(self):
+        reg = forbidding(announcement_colon="block")
+        short = hits_for("The result is predictable: variation increases.", register=reg)
+        self.assertEqual([(h.rule, h.severity) for h in short], [("ANNOUNCEMENT_COLON", "block")])
+        long = hits_for("Every design decision on my platform answers the same question this role asks: how do you present output so a human can trust it.", register=reg)
+        self.assertEqual([(h.rule, h.severity) for h in long if h.rule == "ANNOUNCEMENT_COLON"], [("ANNOUNCEMENT_COLON", "review")])
+
+    def test_rule_overrides(self):
+        profile = dict(DEFAULT_PROFILE)
+        profile["rule_overrides"] = {"NOT_ONLY_BUT_ALSO": "review", "EM_DASH": "off"}
+        hits = hits_for("The model is not only accurate but also fast \u2014 always.", profile=profile)
+        self.assertEqual([(h.rule, h.severity) for h in hits], [("NOT_ONLY_BUT_ALSO", "review")])
+
     def test_staccato_run(self):
         reg = forbidding()
         reg["targets"] = {"pct_short_le5_max": 0.0}

@@ -90,6 +90,9 @@ def validate_profile(profile: dict) -> list:
     for key, value in (profile.get("thresholds") or {}).items():
         if not isinstance(value, (int, float)) or value < 0:
             errors.append("thresholds.%s must be a non-negative number" % key)
+    for rule, level in (profile.get("rule_overrides") or {}).items():
+        if level not in TRISTATE:
+            errors.append("rule_overrides.%s must be one of %s" % (rule, ", ".join(TRISTATE)))
     for name, reg in (profile.get("registers") or {}).items():
         for key, value in reg.items():
             if key == "targets":
