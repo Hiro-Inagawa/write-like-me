@@ -11,7 +11,7 @@ Options:
                          - claude:   Claude.ai conversations.json export
                          - chatgpt:  ChatGPT conversations.json export
     --marker TEXT        Heading that marks the author's turns (markdown format only).
-                         Default: "## Hiro"
+                         Default: "## You"
                          Examples: "## User", "**You:**", "### Human"
     --output PATH        Write extracted text to this file (default: stdout)
     --preview N          Show N random extracted samples and exit (default: 5)
@@ -140,7 +140,7 @@ def extract_turns_from_file(
 
 def load_corpus_markdown(
     input_dir: Path,
-    author_marker: str = "## Hiro",
+    author_marker: str = "## You",
     min_file_bytes: int = 500,
     include_duplicates: bool = False,
     warn_threshold: float = 0.05,
@@ -326,8 +326,8 @@ def main():
     parser.add_argument("input", help="Directory or file containing conversation exports")
     parser.add_argument("--format", choices=["markdown", "claude", "chatgpt"], default="markdown",
                         help="Export format: markdown (default), claude (Claude.ai JSON), chatgpt (ChatGPT JSON)")
-    parser.add_argument("--marker", default="## Hiro",
-                        help="Heading that marks the author's turns (markdown format only, default: '## Hiro')")
+    parser.add_argument("--marker", default="## You",
+                        help="Heading that marks the author's turns (markdown format only, default: '## You')")
     parser.add_argument("--output", help="Write extracted text to this file (default: stdout)")
     parser.add_argument("--preview", type=int, default=0,
                         help="Show N random samples and exit (0 = disabled)")

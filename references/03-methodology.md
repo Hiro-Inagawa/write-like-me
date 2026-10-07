@@ -12,7 +12,7 @@ A formal record of the analytical methods used by this skill. This document exis
 
 ### Source isolation
 
-Conversation exports contain both author and interlocutor turns. Author-only extraction uses a configurable heading marker (e.g., `## Hiro`) to isolate turns, following the export format of Claude.ai. This is consistent with standard **speaker diarization** practice in corpus linguistics (Biber, 1988, who similarly separated speaker registers in large corpora).
+Conversation exports contain both author and interlocutor turns. Author-only extraction uses a configurable heading marker (e.g., `## You`) to isolate turns, following the export format of Claude.ai. This is consistent with standard **speaker diarization** practice in corpus linguistics (Biber, 1988, who similarly separated speaker registers in large corpora).
 
 Deduplication follows the convention for byte-identical copies (filename suffix `_2.md`, `_3.md`) before including files in the analysis.
 
@@ -105,7 +105,7 @@ Raw markdown files contain structural elements (code blocks, tables, frontmatter
 
 **Grounding:** Biber (1988), *Variation Across Speech and Writing*, established that texts cluster into registers based on co-occurring linguistic features. Different registers have different baselines for all features. A register label is required to interpret any stylometric number meaningfully. Calling a sentence "short" requires knowing the register context.
 
-**Implementation:** Three registers are identified for the hiro-voice analysis: article-public, paper-formal, conversation-casual. Each register is analyzed separately to produce register-specific baselines.
+**Implementation:** Three registers are identified for the example-voice analysis: article-public, paper-formal, conversation-casual. Each register is analyzed separately to produce register-specific baselines.
 
 ---
 
@@ -127,7 +127,7 @@ Raw markdown files contain structural elements (code blocks, tables, frontmatter
 
 2. **Author-extraction accuracy.** Conversation export filtering relies on structural markers in the export format. Formats that do not use heading-style author markers (e.g., some plain-text exports) require custom extraction logic.
 
-3. **Single-user corpus.** The hiro-voice profile is derived from a single author's writing. It cannot distinguish between features that are idiosyncratic to this author and features that are common to educated academic English prose in general. A general English baseline comparison is not currently implemented.
+3. **Single-user corpus.** The example-voice profile is derived from a single author's writing. It cannot distinguish between features that are idiosyncratic to this author and features that are common to educated academic English prose in general. A general English baseline comparison is not currently implemented.
 
 4. **Temporal coverage.** The conversation corpus covers December 2025 through April 2026. Any stylistic drift before or after this period is not captured.
 

@@ -19,7 +19,7 @@ The `extract_author_turns.py` script solves this by reading the export format an
 Claude.ai exports conversation markdown with heading-style author markers:
 
 ```
-## Hiro
+## You
 
 [author's message text]
 
@@ -27,14 +27,14 @@ Claude.ai exports conversation markdown with heading-style author markers:
 
 [assistant's response]
 
-## Hiro
+## You
 
 [author's next message]
 ```
 
-The author marker is the heading that precedes the user's content. Default: `## Hiro`.
+The author marker is the heading that precedes the user's content. Default: `## You`.
 
-The script extracts everything between each `## Hiro` heading and the next heading (of any kind).
+The script extracts everything between each `## You` heading and the next heading (of any kind).
 
 ### Custom markers
 
@@ -58,7 +58,7 @@ python extract_author_turns.py <input_dir> [options]
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| `--marker TEXT` | `## Hiro` | Author heading marker |
+| `--marker TEXT` | `## You` | Author heading marker |
 | `--output PATH` | stdout | Write extracted text to file |
 | `--preview N` | 5 | Show N random sample turns before proceeding |
 | `--min-file-bytes N` | 500 | Skip files smaller than N bytes |
@@ -119,7 +119,7 @@ If the preview shows mostly very short turns ("ok", "yes", "can you do X?") and 
 ## Minimum corpus size
 
 After extraction, check total word count:
-- **< 5,000 words:** Extreme caution. Only use clear zero/one values (em-dash count, semicolon count).
-- **5,000–20,000 words:** Directional values only. Warn in provenance file.
+- **< 5,000 words:** Extreme caution. Zero and one counts are provisional candidates for the author to confirm.
+- **5,000–20,000 words:** Directional values only. Every distribution-based rule is provisional. Warn in provenance file.
 - **> 20,000 words:** Distributional features are reliable.
 - **> 100,000 words:** High confidence. Rare features (hapax legomena, uncommon connectives) are measurable.
