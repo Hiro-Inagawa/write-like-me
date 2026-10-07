@@ -6,20 +6,21 @@ How to write the generated voice skill files from the approved rules, statistics
 
 ## Output structure
 
-The generated skill lives at `~/.claude/skills/<name>-voice/`:
+The voice lives inside the skill folder, in `voices/<name>/`, the same place SKILL.md reads it from:
 
 ```
-<name>-voice/
-  SKILL.md                  # Trigger conditions, routing table, hard rules
-  references/
-    01-generative.md        # Positive patterns + exemplars (read at write-time)
-    02-corrective.md        # Hard bans + scan-for list (read after writing)
-    03-corpus-source.md     # Provenance
+voices/<name>/
+  01-generative.md          # Positive patterns + exemplars (read at write-time)
+  02-corrective.md          # Hard bans + scan-for list (read after writing)
+  03-corpus-source.md       # Provenance
   claude-ai-skill.md        # Self-contained export for Claude.ai Skills upload
-  profile.json               # Machine-readable rule set consumed by scripts/voice_check.py
-  goldens.jsonl               # Approved BAD/GOOD examples turned into scored test cases
-  eval-baseline.json          # Saved eval score used as the regression gate
+  profile.json              # Machine-readable rule set consumed by scripts/voice_check.py
+  goldens.jsonl             # Approved BAD/GOOD examples turned into scored test cases
+  eval-baseline.json        # Saved eval score used as the regression gate
+  hook.json                 # Optional path rules for the Claude Code hooks (references/10-hooks.md)
 ```
+
+`templates/generated-SKILL.md` is for the case where the voice should become a separate skill of its own. Copy the voice folder into that skill and keep the file names above.
 
 Use the templates in `templates/` as skeletons. Fill in the corpus-specific data.
 
@@ -27,7 +28,7 @@ Use the templates in `templates/` as skeletons. Fill in the corpus-specific data
 
 ## profile.json
 
-Holds the machine-readable version of the approved rules, the `bans` word lists and the per-register `registers` policy, keyed to the rule ids documented in `references/00-universal-baseline.md`. It is what `scripts/voice_check.py` and `eval/voice_eval.py` load at run time, in place of the prose in `02-corrective.md`. Produced by `python scripts/voice_profile.py init --voice <name> --register <primary-register> --from-stylometry <register>.stylometry.json --output profile.json`, then hand-edited so the `bans` and `registers` sections match the rules approved in Stage 5. Validated by `python scripts/voice_profile.py validate profile.json` before it is used as a gate.
+Holds the machine-readable version of the approved rules, the `bans` word lists and the per-register `registers` policy, keyed to the rule ids documented in `references/00-universal-baseline.md`. It is what `scripts/voice_check.py` and `eval/voice_eval.py` load at run time, in place of the prose in `02-corrective.md`. Produced by `python scripts/voice_profile.py init --voice <name> --register <primary-register> --from-stylometry <register>.stylometry.json --output profile.json`, then hand-edited so the `bans` and `registers` sections match the rules approved in Stage 5. Validated by `python scripts/voice_profile.py validate profile.json` before it is used as a gate. When the corpus is under 20,000 words, the profile carries a `provisional` object that lists the rules waiting for the author's confirmation.
 
 ## goldens.jsonl
 
@@ -74,6 +75,8 @@ Sections in order:
 Sections in order:
 
 1. **Hard bans**, zero-tolerance rules, with examples of bad and corrected versions. These are scanned automatically before every delivery.
+
+   **Provisional rules**, a separate short section, lists each rule that rests on a corpus under 20,000 words. Each entry gives the rule, the evidence, and the word count, and says that the author must confirm it. These rules are not hard bans.
 
 2. **Soft checks**, patterns to flag and consider. Not auto-rejected. User decides in context.
 

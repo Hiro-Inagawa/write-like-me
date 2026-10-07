@@ -31,6 +31,14 @@ GOOD: {{hard_ban_3_good_example}}
 
 ---
 
+## Provisional rules (waiting for the author's confirmation)
+
+{{provisional_rules}}
+
+A provisional rule rests on a corpus under 20,000 words, so it is a candidate and not a ban. The author confirms it against a new text or drops it. Write "None" when the corpus is large enough.
+
+---
+
 ## Soft checks (flag and consider, fix when the pattern dominates)
 
 {{soft_check_list}}

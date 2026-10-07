@@ -1,6 +1,7 @@
 ---
 name: write-like-me
-description: Use when writing or revising prose, or when building a new writing voice from a corpus. On invoke: checks the voices/ folder. If voices exist, routes to writing mode. If none exist, starts the 7-stage voice-building workflow. Supports multiple named voices, one per author, register, or style. Includes a deterministic draft checker (scripts/voice_check.py) and an eval harness.
+version: 3.0.0
+description: Use when writing or revising prose for a reader (emails, cover letters, form-field answers, profile texts, portfolio pages, listing and README prose), when asked about such a text, or when building a new writing voice from a corpus. On invoke: checks the voices/ folder. If voices exist, routes to writing mode, which follows a two-message method (explain first, then write the text). If none exist, starts the 7-stage voice-building workflow. Supports multiple named voices. Includes a deterministic draft checker (scripts/voice_check.py), an eval harness, and Claude Code hooks.
 ---
 
 # Write Like Me
@@ -8,9 +9,25 @@ description: Use when writing or revising prose, or when building a new writing 
 A single skill with two modes:
 
 - **Build mode.** No voice profile exists yet. Runs a 7-stage workflow: analyzes your writing corpus using linguistic and psychological measurement methods, mines your style rules, and generates a personalized voice profile saved to `voices/<name>/`.
-- **Write mode.** A voice profile exists. Reads it and writes or revises prose in that voice. The universal anti-AI baseline (`references/00-universal-baseline.md`) is always active, on top of whatever the voice profile specifies.
+- **Write mode.** A voice profile exists. Reads it and writes or revises prose in that voice, using the two-message method in `references/09-how-to-write.md`. The universal anti-AI baseline (`references/00-universal-baseline.md`) is always active, on top of whatever the voice profile specifies.
 
 Multiple voices are supported. Each voice is a named subfolder in `voices/`. You can have one for your own writing, one for a different register, one built from an admired author's work.
+
+---
+
+## When this skill applies
+
+It applies to every text that someone other than the author will read, and to every judgment about such a text, whether or not the author names the skill. These situations are triggers.
+
+- An answer to a form field, such as a job application question or a registration form.
+- A cover letter, or a paragraph of one, including an "additional information" field.
+- A profile text, headline, bio, about text or service description for any platform.
+- A portfolio page, project overview, summary or case study section.
+- An email, reply, message or outreach to another person.
+- A listing text, the prose of a README, or the description of a public repository or marketplace entry.
+- The author's questions about a text, such as "is this good?", "how does this come across?", "can this be shorter?" or "in your own words". A yes or no question is answered with yes or no first, and nothing is changed until the author says so.
+
+Two Claude Code hooks enforce this. A `UserPromptSubmit` hook recognizes such a request and adds the method to the context. A `PostToolUse` hook runs the checker on every reader text written to a writing path. Setup is in `references/10-hooks.md`. A text written in chat and not to a file is never seen by the post-write hook, so the checker has to be run by hand before the text is shown.
 
 ---
 
@@ -29,17 +46,28 @@ On every invoke:
 
 When a voice is selected:
 
-1. Read `voices/<name>/01-generative.md`. Positive patterns, quantitative targets, exemplars.
-2. Read `voices/<name>/02-corrective.md`. Hard bans, scan checklist.
-3. Read `references/00-universal-baseline.md`. Always active, applies to every voice.
-4. State in one sentence what you will write or revise. Wait for confirmation.
+1. Read `references/09-how-to-write.md`. It describes how the writing is done, and everything below checks the result.
+2. Read `voices/<name>/01-generative.md`. Positive patterns, quantitative targets, exemplars.
+3. Read `voices/<name>/02-corrective.md`. Hard bans, scan checklist.
+4. Read `references/00-universal-baseline.md`. Always active, applies to every voice.
+5. State in one sentence what you will write or revise. Wait for confirmation.
+
+### The two messages
+
+For every text that a reader will see, the work has two steps and they are never merged.
+
+1. **Message one is the explanation.** Read the real source first. Then explain the subject to the author in chat, in plain paragraphs, as the answer to "What is this, and why does it exist?" Include the actual feature, the actual number and one example made for this text. Wait for the author to approve it.
+2. **Message two is the text.** After approval, cut the explanation down to the target and change the point of view where needed. The approved wording stays. A sentence that is in the text and not in the explanation is a defect. Add nothing the request, the source or the explanation did not contain, and never add a caveat, a disclaimer or a closing note.
+
+When the author asks a question about a text, the reply is the answer and nothing else. After a rejection, state what was understood, name the rule that was broken, and start again from the source. The full method, the moves that are never allowed and the rules for working with the author are in `references/09-how-to-write.md`.
 
 After delivering prose:
 
-1. Save the draft to a file (or pipe it) and run the checker:
-   `python scripts/voice_check.py <draft.md> --profile voices/<name>/profile.json --register <register>`
+1. Save the draft to a file (or pipe it). Save the approved explanation to a second file, and the phrases the author rejected so far to a third file with one phrase per line. Run the checker:
+   `python scripts/voice_check.py <draft.md> --profile voices/<name>/profile.json --register <register> --explanation <explanation.md> --rejected <rejected.txt>`
+   The last two flags are optional. `--explanation` reports every number and proper noun in the draft that the explanation does not contain as `ADDITION`. `--rejected` blocks a draft that contains a rejected phrase.
 2. Fix every `block` hit and run again until the last line is `VOICE_CHECK_PASS` or `VOICE_CHECK_REVIEW`.
-3. Read each `review` hit and each drift line. Fix it or say in one line why it stays.
+3. Read each `review` hit and each drift line. Fix it or say in one line why it stays. Lines marked `info` are reported and leave the verdict alone.
 4. Then scan for the judgment rules in `voices/<name>/02-corrective.md` that no command can check.
 
 ---
@@ -71,11 +99,19 @@ Read `references/02-author-filtering.md`.
 For conversation exports: run `scripts/extract_author_turns.py` with the confirmed author marker. Show 5 random extracted samples and confirm the filter worked. Flag:
 - Extracted content < 10% of source file (filter may be wrong)
 - Content contains AI-output markers ("I'll help you", "Certainly!", "Here's a")
-- Total corpus < 20,000 words after filtering (warn: distributions unreliable below this)
+- Total corpus < 20,000 words after filtering. Say so now: the build continues, and every rule that rests on a distribution is emitted as provisional (see Stage 4)
 
 For prose files: confirm file count and approximate word count.
 
 ### Stage 3. Analyze
+
+First run the preflight, so that every warning appears before the analysis starts:
+
+```
+python scripts/voice_profile.py preflight --corpus-words <approximate word count>
+```
+
+It lists optional packages that are missing (`textstat`, `spaCy`) and states when the corpus is below 20,000 words. Install the packages if you want the extended features, or continue without them.
 
 Run `scripts/stylometry.py` over the full filtered corpus and over each register subset separately (e.g., formal essays, casual writing, conversation).
 
@@ -98,9 +134,13 @@ Three sources, in order:
 
 Compile candidate rules.
 
+An absence in a small sample is not a ban. A feature count of 0 in a corpus under 20,000 words produces a provisional rule that is marked for the author's confirmation. `voice_profile.py init` applies the same rule: below 20,000 words it writes semicolons as `review`, does not let a zero short-sentence target block, and records every such rule under `provisional` in `profile.json`. A rule leaves that list only when the author confirms it against a new text.
+
 ### Stage 5. Review (STOP, wait for user)
 
 Present mined rules as a numbered checklist. For each: state the rule and its evidence source.
+
+Tell the user what an answer changes before asking. A yes makes the rule a checker rule with the severity shown in the list, and a no drops the rule so that the checker never applies it.
 
 Ask the user to:
 - Mark false positives
@@ -135,13 +175,15 @@ Ask if the user wants to inspect any file before verification.
 
 Read `references/07-verification.md`.
 
-Hold out 2–3 corpus samples not used as exemplars. Generate text on the same topics using the new voice.
+Hold out 2 or 3 corpus samples that were not used as exemplars. Ask the user to generate one paragraph per sample topic with whatever agent they already use, and to save each paragraph to its own file. No particular command line tool is needed. Then score the files:
 
-Part one is mechanical and automated. Run `voice_check.py` on the generated paragraph with the new profile and require `VOICE_CHECK_PASS` or `VOICE_CHECK_REVIEW`, then run the eval gate and require `VOICE_EVAL_OK`.
+```
+python eval/voice_eval.py verify --profile voices/<name>/profile.json <sample1.md> <sample2.md>
+```
 
-Part two keeps the held-out generation comparison from `references/07-verification.md` for sentence length, hedge density, and concession rate, which the drift lines now report.
+Require `VOICE_EVAL_OK`. Run `voice_check.py` on any failing sample to see the hits and the drift lines. Then run the eval gate on the voice goldens and require `VOICE_EVAL_OK` there as well. Compare the drift lines with the held-out samples as described in `references/07-verification.md`.
 
-Report pass/fail. Flag any rule that needs sharpening.
+Report pass or fail per sample. Flag any rule that needs sharpening.
 
 ---
 
@@ -149,6 +191,8 @@ Report pass/fail. Flag any rule that needs sharpening.
 
 | Task | Read |
 |------|------|
+| Any text a reader will see | `references/09-how-to-write.md` |
+| Setting up the Claude Code hooks | `references/10-hooks.md` |
 | Writing new prose | `voices/<name>/01-generative.md` + `references/00-universal-baseline.md` |
 | Revising prose | `voices/<name>/02-corrective.md` + `references/00-universal-baseline.md` |
 | Finding corpus sources | `references/01-corpus-discovery.md` |
@@ -172,8 +216,10 @@ Report pass/fail. Flag any rule that needs sharpening.
 | `scripts/extract_author_turns.py` | Extract author-only turns from conversation export markdown |
 | `scripts/generate_report_from_json.py` | Combine JSON profiles into a human-readable report |
 | `scripts/voice_check.py` | Deterministic draft checker. Reports hits, drift, a verdict, and an exit code |
-| `scripts/voice_profile.py` | Load, validate, and initialize a voice `profile.json` |
-| `eval/voice_eval.py` | Score `voice_check.py` against golden passages and gate regressions |
+| `scripts/voice_profile.py` | Load, validate, and initialize a voice `profile.json`. `preflight` reports missing packages and a small corpus |
+| `scripts/voice_rules_reader.py` | The reader-text rules: closing caveat, benefit tail, tagline, length band, additions, repeated phrase |
+| `scripts/writing-gate-hook.mjs` | Claude Code hooks for prompts and for files that were just written |
+| `eval/voice_eval.py` | Score `voice_check.py` against golden passages, gate regressions, and `verify` generated samples |
 
 ---
 

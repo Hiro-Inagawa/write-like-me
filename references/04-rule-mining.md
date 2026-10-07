@@ -16,11 +16,6 @@ Read any rule files the user identified (feedback logs, correction notes, style 
 
 These rules have the highest confidence. They represent explicit user intent rather than inference. Record the source for each.
 
-**For Hiro's first-run, known source files:**
-- `memory/feedback_punctuation.md`, zero em-dashes, zero semicolons
-- `memory/feedback_colon_style.md`, no announcement colons, no empty intensifiers
-- `__KAIRO/SELF/07_CORRECTIONS.md`, correction log with examples
-
 ---
 
 ### Source 2: Auto-derive from extreme statistics
@@ -29,10 +24,11 @@ Look for features at the extremes of the distribution. Thresholds:
 
 | Finding | Candidate rule |
 |---------|----------------|
-| Feature count = 0 in primary register | "never uses X" |
+| Feature count = 0 in primary register, corpus of 20,000 words or more | "never uses X" |
+| Feature count = 0 in primary register, corpus under 20,000 words | provisional rule, "has not used X so far", marked for the author's confirmation |
 | Feature rate < 0.5% when general English baseline is ~2–5% | "rarely uses X" |
 | Feature rate > 5× general English baseline | "frequently uses X, more than typical" |
-| 0% short sentences (≤5 words) | "no fragment sentences" |
+| 0% short sentences (≤5 words) | "no fragment sentences" (provisional below 20,000 words) |
 | 100% long sentences (≥30 words) | "always writes in extended sentences" — unlikely, flag as anomaly |
 | Booster tokens = 0 | "never uses empty intensifiers" |
 | Hedging rate < 0.2/100w | "hedges sparingly; calibrated to actual uncertainty" |
@@ -53,6 +49,20 @@ Look for sentence shapes and patterns that are absent from the corpus:
 
 ---
 
+## Provisional rules
+
+An absence in a small sample is weak evidence. Eight essays with no sentence of five words or fewer do not show that the author never writes one. A corpus under 20,000 words therefore never produces a ban from a count of 0. Every rule that rests on a measured distribution is emitted as provisional. That covers a zero count, the sentence length ranges, the comma rate, the hedge density and the pronoun rates.
+
+How a provisional rule is handled:
+
+1. `voice_profile.py init` lists it under `provisional.rules` in `profile.json`. A zero semicolon count becomes `review` instead of `forbidden`, and a zero short-sentence target no longer lets a staccato run block. Drift lines that come from provisional targets are labelled `(provisional)`.
+2. The emitted `02-corrective.md` lists it in a section named Provisional rules, with the evidence and the word count.
+3. The author confirms it or drops it after seeing it applied to a new text. Confirming means removing its name from `provisional.rules`. Dropping means deleting the rule.
+
+Rules from an existing rule file stay firm, because they come from the author's explicit statement and not from a count.
+
+---
+
 ## What to do with candidate rules
 
 For each candidate rule, record:
@@ -62,6 +72,8 @@ For each candidate rule, record:
 4. Confidence (high = explicit statement or 0-count; medium = borderline stat; low = inference)
 
 Present all candidate rules to the user at Stage 5. The user approves, rejects, or refines each one.
+
+Say what an answer changes before asking. A yes makes the rule a checker rule with the severity shown in the list. A no drops the rule, and the checker never applies it. Mark provisional rules as provisional in the list.
 
 ---
 

@@ -20,8 +20,8 @@
 
 ## Tool versions
 
-- `building-voice-skills/scripts/stylometry.py`, {{stylometry_version}}
-- `building-voice-skills/scripts/extract_author_turns.py`, {{extraction_version}}
+- `scripts/stylometry.py`, {{stylometry_version}}
+- `scripts/extract_author_turns.py`, {{extraction_version}}
 - Python {{python_version}}
 
 ---
@@ -62,6 +62,14 @@ Rules in `01-generative.md` and `02-corrective.md` were derived from:
 3. Compare new profile against stored snapshot using `references/08-regeneration-and-diff.md`
 4. Update quantitative targets in `01-generative.md` if primary register corpus grew substantially
 5. Update this file with new date and word counts
+
+---
+
+## Provisional rules
+
+{{provisional_rules}}
+
+List every rule that rests on a corpus under 20,000 words, or write "None" when the corpus is large enough. The author confirms or drops each one.
 
 ---
 

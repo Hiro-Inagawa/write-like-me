@@ -2,7 +2,7 @@
 
 **Generated:** {{analysis_date}}
 **Corpus:** {{register_count}} registers analyzed separately, {{register_list}}
-**Method:** Computational stylometry (stdlib-only base tier). Features: function word frequencies, MATTR, sentence length distribution, punctuation rates, hedging/booster density, pronoun rates, sentence-initial patterns, hapax legomena ratio. See `building-voice-skills/references/03-methodology.md` for full academic grounding.
+**Method:** Computational stylometry (stdlib-only base tier). Features: function word frequencies, MATTR, sentence length distribution, punctuation rates, hedging/booster density, pronoun rates, sentence-initial patterns, hapax legomena ratio. See `references/03-methodology.md` for full academic grounding.
 
 ---
 
@@ -44,4 +44,4 @@
 
 **What this corpus does not capture.** {{coverage_note}}
 
-**Academic grounding.** All features used here have established research grounding. Function word frequency profiles: Mosteller & Wallace (1964), Burrows (2002). MATTR: Covington & McFall (2010). Sentence length distribution: Mendenhall (1887), Biber (1988). Punctuation rates: Grieve (2007). Hedging/booster: Biber & Finegan (1988), Hyland (1998). Register analysis: Biber (1988). Full citations in `building-voice-skills/references/03-methodology.md`.
+**Academic grounding.** All features used here have established research grounding. Function word frequency profiles: Mosteller & Wallace (1964), Burrows (2002). MATTR: Covington & McFall (2010). Sentence length distribution: Mendenhall (1887), Biber (1988). Punctuation rates: Grieve (2007). Hedging/booster: Biber & Finegan (1988), Hyland (1998). Register analysis: Biber (1988). Full citations in `references/03-methodology.md`.

@@ -33,7 +33,8 @@
       "properties": {
         "short_sentence_words": { "type": "number", "minimum": 0 },
         "staccato_run": { "type": "number", "minimum": 0 },
-        "min_words_for_drift": { "type": "number", "minimum": 0 }
+        "min_words_for_drift": { "type": "number", "minimum": 0 },
+        "hedge_tolerance": { "description": "Allowed distance, in hedge tokens per 100 words, from targets.hedge_per_100w_mean. Read by the checker and by references/07-verification.md.", "type": "number", "minimum": 0 }
       },
       "additionalProperties": {
         "type": "number",
@@ -53,6 +54,21 @@
         "extra_phrases": { "$ref": "#/definitions/stringList" }
       },
       "additionalProperties": { "$ref": "#/definitions/stringList" }
+    },
+    "provisional": {
+      "description": "Present when the corpus is under 20,000 words. Lists the rules that wait for the author's confirmation. Remove a name once the author has confirmed that rule.",
+      "type": "object",
+      "properties": {
+        "words": { "type": "integer" },
+        "min_words": { "type": "integer" },
+        "rules": { "type": "array", "items": { "type": "string" } },
+        "note": { "type": "string" }
+      }
+    },
+    "rule_overrides": {
+      "description": "Maps a rule id to off, info, review or block for this voice.",
+      "type": "object",
+      "additionalProperties": { "type": "string", "enum": ["off", "info", "review", "block"] }
     },
     "registers": {
       "description": "Named register overrides. Each register merges over DEFAULT_REGISTER; unset keys fall back to the default.",
@@ -85,8 +101,20 @@
         "announcement_colon": { "$ref": "#/definitions/tristateValue" },
         "hedge_connectives": { "$ref": "#/definitions/tristateValue" },
         "meta_commentary": { "$ref": "#/definitions/tristateValue" },
-        "tricolon": { "$ref": "#/definitions/tristateValue" },
+        "tricolon": { "type": "string", "enum": ["off", "info", "review", "block"], "description": "Default is info, which reports the hit and leaves the verdict alone." },
         "compressed_antithesis": { "$ref": "#/definitions/tristateValue" },
+        "closing_caveat": { "$ref": "#/definitions/tristateValue" },
+        "benefit_tail": { "$ref": "#/definitions/tristateValue" },
+        "tagline": { "$ref": "#/definitions/tristateValue" },
+        "additions": { "$ref": "#/definitions/tristateValue" },
+        "empty_intensifiers": { "$ref": "#/definitions/tristateValue" },
+        "exclamations": { "$ref": "#/definitions/tristateValue" },
+        "length": {
+          "description": "Two-sided word band for the register. The checker blocks outside the band when min and max are both set, and reviews when only one is set.",
+          "type": "object",
+          "properties": { "min": { "type": "number", "minimum": 0 }, "max": { "type": "number", "minimum": 0 } },
+          "additionalProperties": false
+        },
         "targets": { "$ref": "#/definitions/targets" }
       },
       "additionalProperties": false
@@ -100,6 +128,7 @@
         "comma_per_sentence": { "$ref": "#/definitions/rangePair" },
         "pct_short_le5_max": { "type": "number", "minimum": 0 },
         "hedge_per_100w_max": { "type": "number", "minimum": 0 },
+        "hedge_per_100w_mean": { "type": "number", "minimum": 0 },
         "boost_per_100w_max": { "type": "number", "minimum": 0 },
         "first_sg_per_100w_max": { "type": "number", "minimum": 0 }
       },

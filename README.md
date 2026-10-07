@@ -10,6 +10,8 @@ It prints every em dash, filler phrase, hedge, and AI tell with a line number an
 
 A Claude Code skill that analyzes how you write and generates a personalized voice profile for writing and revising prose. It uses linguistic and psychological measurement methods rather than subjective descriptions to capture your actual style from a corpus of your own writing.
 
+**New in v3 (October 2026).** The skill now teaches the method as well as measuring the result. For every text that a reader will see, it works in two messages. The first explains the subject to the author in plain paragraphs. The second, sent after approval, is the text, cut from that explanation. The checker gained six reader-text rules, a check that the text contains no number or name that the explanation lacked, and a check that a rejected phrase does not return. Claude Code hooks run the method and the checker without a reminder. Details are in the sections "The two messages", "New checks in v3", "Hooks for Claude Code" and "Provisional rules", and in [CHANGELOG.md](CHANGELOG.md).
+
 **New in v2 (September 2026).** The skill now ships a deterministic checker. After a draft is written, `python scripts/voice_check.py draft.md --profile voices/<name>/profile.json` reports every violation with a line number and a fix, and exits non-zero on a hard rule, so the voice is enforced by code instead of by asking the model to be careful. Each voice also gets a machine-readable `profile.json` and a golden test set, and an eval harness gates every rule change. Details are in the sections "Checking a draft" and "Evaluating the checker" below, and in [CHANGELOG.md](CHANGELOG.md).
 
 The same skill supports multiple voices. You can build one from your primary writing register, another from a different register, and another from an author whose style you want to study, and switch between them within the same skill.
@@ -55,6 +57,50 @@ You can have as many profiles as you want, each stored under its own name in the
 - A profile built from a published author whose style you want to study (the skill treats their patterns as an influence layer, not hard rules)
 
 Name the profile when you invoke the skill and it switches automatically.
+
+---
+
+## THE TWO MESSAGES
+
+A text written straight to a format, such as "portfolio copy" or "cover letter", sounds like the format. A text that is cut from an explanation to the author sounds like the author. `references/09-how-to-write.md` describes the method, and write mode follows it.
+
+1. **Message one.** Read the real source. Explain the subject to the author in chat, in plain paragraphs, with the actual feature, the actual number and one example. The author approves it or corrects it.
+2. **Message two.** Cut the approved explanation down to the target. A sentence in the text that was not in the explanation is a defect.
+
+The file also lists the moves that are never allowed and the rules for working with the author: one piece at a time, the author's text as the base, a question answered without action, and a review against every earlier correction before the draft is shown.
+
+## NEW CHECKS IN V3
+
+| Rule id | Flags | Default |
+|---------|-------|---------|
+| `CLOSING_CAVEAT` | A final paragraph or last sentences that open with a caveat phrase such as keep in mind or note that | review |
+| `COMPRESSED_ANTITHESIS` | A ", not X" or "rather than" tail in a short line, a heading or a label, and a short closing ", not X." | review |
+| `BENEFIT_TAIL` | A sentence ending in so you can, which lets you, helping you, allowing you, or ensuring | review |
+| `TAGLINE` | A short prose line of abstract nouns with no verb | review |
+| `LENGTH_BAND` | Word count outside `register.length` (`min`, `max`) | block when both are set |
+| `ADDITION` | A number or name in the draft that the file passed with `--explanation` lacks | review |
+| `REPEATED_PHRASE` | A phrase from the file passed with `--rejected` | block |
+| `TRICOLON` | Three parallel items, now reported only | info |
+
+The severity of each rule is set per register in `profile.json`. `info` hits appear in the output and leave the verdict alone.
+
+    python scripts/voice_check.py draft.md --profile voices/<name>/profile.json --explanation explanation.md --rejected rejected.txt
+
+## HOOKS FOR CLAUDE CODE
+
+`scripts/writing-gate-hook.mjs` runs in two modes. The `prompt` mode adds the method to the context when a prompt asks for a text that a reader will see. The `post-write` mode runs the checker on every reader text that was just written and blocks on `VOICE_CHECK_BLOCK`. It needs Node and no packages. The exact `settings.json` entries and the `hook.json` options are in `references/10-hooks.md`. Run `node --test tests/*.test.mjs` to test the hook.
+
+## PROVISIONAL RULES
+
+A count of 0 in a small corpus is weak evidence. When the corpus is under 20,000 words, the build still runs and every rule that rests on a distribution is written as provisional. `profile.json` lists them under `provisional`, `02-corrective.md` has a section for them, and drift lines that come from them are labelled. A zero semicolon count becomes `review` and no longer `forbidden`. A rule stops being provisional when the author confirms it against a new text and removes its name from the list. Run `python scripts/voice_profile.py preflight --corpus-words N` before the analysis to see this and the missing optional packages up front.
+
+## VERIFYING A VOICE
+
+Stage 7 no longer needs any particular agent. Generate a paragraph per held-out topic with the agent you already use, save each to a file, and run:
+
+    python eval/voice_eval.py verify --profile voices/<name>/profile.json sample-1.md sample-2.md
+
+The hedge tolerance that this step applies is one value in the profile, `thresholds.hedge_tolerance`.
 
 ---
 
@@ -184,6 +230,10 @@ The checker is itself tested against golden passages, so a rule change cannot si
 
     python eval/voice_eval.py score --goldens eval/goldens/universal.goldens.jsonl --gate eval/baselines/universal.json
 
+The reader-text rules have their own goldens and baseline:
+
+    python eval/voice_eval.py score --goldens eval/goldens/reader.goldens.jsonl --gate eval/baselines/reader.json
+
 Each voice gets its own `goldens.jsonl` built from the rule examples you approved during the build. The metrics that matter are `block_recall` (does it catch what it must) and `false_alarm_rate` (does it flag what it must not).
 
 ---
@@ -212,6 +262,8 @@ write-like-me/
     06-skill-emission.md            # What goes in each generated file
     07-verification.md              # Held-out generation test protocol
     08-regeneration-and-diff.md     # Re-run protocol when corpus grows
+    09-how-to-write.md              # The two-message method for any text a reader will see
+    10-hooks.md                     # Claude Code hook setup
   scripts/
     stylometry.py                   # Feature extraction
     extract_author_turns.py         # Author-turn filter for conversation exports
@@ -219,15 +271,19 @@ write-like-me/
     voice_segment.py                # Markdown draft to prose segments, with line numbers
     voice_rules.py                  # Deterministic detectors, parameterized by profile
     voice_profile.py                # Load, validate, and initialize profile.json
+    voice_rules_reader.py           # Reader-text rules added in v3
     voice_check.py                  # CLI checker, prints hits and a verdict, sets exit code
+    writing-gate-hook.mjs           # Claude Code hooks, prompt and post-write
     requirements.txt                # Optional Python dependencies
   eval/
     voice_eval.py                   # Scores goldens, saves baselines, runs the regression gate
     README.md                       # Golden format and metrics
     goldens/
       universal.goldens.jsonl       # Ships with the repo
+      reader.goldens.jsonl          # Reader-text rule goldens, made-up passages
     baselines/
       universal.json                # Ships with the repo
+      reader.json                   # Ships with the repo
   tests/                            # Unit tests, fixtures, and a negative control for the checker
   templates/
     generated-01-generative.md      # Skeleton for write-time guidance
@@ -246,6 +302,7 @@ write-like-me/
       profile.json                  # Rules for the draft checker
       goldens.jsonl                 # Golden examples for evaluating the checker
       eval-baseline.json            # Recorded metrics for the regression gate
+      hook.json                     # Optional path rules for the Claude Code hooks
 ```
 
 ---

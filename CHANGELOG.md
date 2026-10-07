@@ -2,6 +2,35 @@
 
 All notable changes to Write Like Me. Versions are git tags and GitHub Releases.
 
+## 3.0.0 (2026-10-06)
+
+Method layer
+
+- New `references/09-how-to-write.md`. Write a reader text the way the subject would be explained to the author in chat. Explain first, then write the text by cutting the approved explanation. Includes the moves that are never allowed and the rules for working with the author.
+- `SKILL.md` gains the section "When this skill applies" and the two-message method as a visible step in write mode.
+
+New checks in `scripts/voice_check.py`
+
+- `CLOSING_CAVEAT`, `BENEFIT_TAIL`, `TAGLINE` and `LENGTH_BAND`, each configurable per register in the profile.
+- `COMPRESSED_ANTITHESIS` now covers short lines, headings and labels, and no longer flags `rather than` inside a long sentence.
+- `--explanation FILE` reports every number and proper noun that the explanation does not contain as `ADDITION`.
+- `--rejected FILE` blocks any phrase from the file, with case and whitespace ignored, as `REPEATED_PHRASE`.
+- `TRICOLON` is configurable per register and defaults to `info`, which is reported and leaves the verdict alone.
+- New goldens for every new rule in `eval/goldens/reader.goldens.jsonl`, with their own baseline.
+
+Walkthrough fixes
+
+- A feature count of 0 in a corpus under 20,000 words now produces a provisional rule for the author to confirm and never a ban. Below 20,000 words every distribution-based rule is emitted as provisional and listed under `provisional` in `profile.json`.
+- Stage 5 now says what a yes and a no change.
+- Stage 7 no longer needs the Claude command line tool. It scores paragraphs from files with `python eval/voice_eval.py verify`.
+- The hedge tolerance is one profile value, `thresholds.hedge_tolerance`, that the checker and `references/07-verification.md` share.
+- Templates and `references/06-skill-emission.md` use the real paths and describe `voices/<name>/`.
+- `python scripts/voice_profile.py preflight` prints missing packages and a small corpus before the analysis starts.
+
+Hooks
+
+- `scripts/writing-gate-hook.mjs` adds a `prompt` mode and a `post-write` mode for Claude Code. The voice comes from `--voice` or `WRITE_LIKE_ME_VOICE`, and the path rules from `voices/<name>/hook.json`. Setup is in `references/10-hooks.md`.
+
 ## 2.0.10 (2026-09-04)
 
 - New rule `EXCLAMATION` flags an exclamation mark that ends a prose sentence. Off by default, turned on per register with `exclamations` set to review or block.

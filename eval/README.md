@@ -17,7 +17,11 @@ Fields:
 - `text`: the passage to check.
 - `expect`: `pass`, `review`, or `block`.
 - `rules`: optional. When present, every listed rule id must appear among the hits for the golden to pass.
-- `register` and `profile`: optional per-golden overrides. Defaults come from the CLI flags.
+- `register`: optional per-golden register. The default comes from the CLI flags.
+- `register_overrides`: optional object merged into the register for this golden only, for example `{"length": {"min": 20, "max": 60}}` or `{"tricolon": "review"}`.
+- `explanation`: optional text passed to the checker as the approved explanation, which activates `ADDITION`.
+- `rejected`: optional list of rejected phrases, which activates `REPEATED_PHRASE`.
+- For a `pass` golden, `rules` lists rules that must fire without changing the verdict, such as an `info` hit.
 - `note`: optional, for the next reader.
 
 ## Metrics
@@ -36,11 +40,20 @@ The per-rule table lists `expected`, `hit`, `missed`, and `spurious` counts for 
 ```bash
 python eval/voice_eval.py score --goldens eval/goldens/universal.goldens.jsonl [--profile FILE] [--register NAME] [--gate BASELINE] [--tolerance 0.0] [--json OUT]
 python eval/voice_eval.py baseline --goldens eval/goldens/universal.goldens.jsonl [--profile FILE] [--register NAME] --output eval/baselines/universal.json
+python eval/voice_eval.py verify --profile voices/<name>/profile.json [--register NAME] [--strict] SAMPLE...
 python eval/voice_eval.py selftest
+```
+
+Two goldens files ship with the repo, each with its own baseline. `universal.goldens.jsonl` covers the universal baseline. `reader.goldens.jsonl` covers the reader-text rules added in v3 and uses made-up passages only. Run both gates:
+
+```bash
+python eval/voice_eval.py score --goldens eval/goldens/universal.goldens.jsonl --gate eval/baselines/universal.json
+python eval/voice_eval.py score --goldens eval/goldens/reader.goldens.jsonl --gate eval/baselines/reader.json
 ```
 
 - `score` runs every golden and prints the metrics table. With `--gate`, it also compares the run against a saved baseline file and fails if `block_recall` or `review_recall` drops below the baseline minus `--tolerance`, or `false_alarm_rate` rises above the baseline plus `--tolerance`. Default tolerance is 0.
 - `baseline` runs the same scoring pass and writes the metrics to a JSON file for later gating. Read the written file and confirm the numbers before committing it.
+- `verify` scores paragraphs that someone generated with any agent and saved to files. Each file is one sample. A sample fails on `BLOCK`, and with `--strict` on `REVIEW` or drift as well. It ends with `VOICE_EVAL_OK` when every sample passes. Stage 7 of the build workflow uses it.
 - `selftest` scores the two fixtures in `tests/fixtures/` against the built-in universal profile with no external file.
 
 Exit code is 0 when every golden passes and the gate (if any) holds, 1 when a golden fails or the gate fails, 2 on bad input. The last line of stdout is always `VOICE_EVAL_OK` or `VOICE_EVAL_FAILED`.

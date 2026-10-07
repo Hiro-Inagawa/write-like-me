@@ -13,13 +13,13 @@ A voice skill for writing and revising prose in {{author_name}}'s established re
 
 Before producing any prose:
 
-1. Read `references/01-generative.md` for the quantitative targets, structural patterns, and exemplars.
-2. Read `references/02-corrective.md` for the hard bans and scan checklist.
+1. Read `01-generative.md` for the quantitative targets, structural patterns, and exemplars.
+2. Read `02-corrective.md` for the hard bans and scan checklist.
 3. State in one sentence what you will write or revise. Wait for confirmation or redirection.
 
 After delivering any prose:
 
-- Scan the output against `references/02-corrective.md` before sending.
+- Scan the output against `02-corrective.md` before sending.
 - If any hard ban is present, fix it first.
 
 ---

@@ -66,4 +66,4 @@ Always exclude:
 
 ## When the corpus is small
 
-If the total filtered corpus is under 20,000 words, warn: "distributional features may be unreliable." Still proceed, but flag in the provenance file which metrics are based on small-sample data. The hard rules (zero em-dashes, no announcement colons, etc.) are valid even from small samples when they represent extreme values (0 occurrences = always never uses it).
+If the total filtered corpus is under 20,000 words, warn: "distributional features may be unreliable." The build continues, and every rule that rests on a distribution is emitted as provisional (see `04-rule-mining.md`). Flag in the provenance file which metrics are based on small-sample data. A count of 0 in a small corpus is a candidate for the author to confirm. It is not a ban. Rules that come from the author's own rule files stay firm.
