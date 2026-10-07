@@ -1,0 +1,8 @@
+{
+  "n": 36,
+  "block_recall": 1.0,
+  "review_recall": 1.0,
+  "false_alarm_rate": 0.0,
+  "review_noise": 0.0,
+  "failures": []
+}

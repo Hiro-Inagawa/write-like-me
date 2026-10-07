@@ -81,8 +81,8 @@ class UniversalRuleTests(unittest.TestCase):
         self.assertEqual(rule_ids("I think that is fascinating.", register=forbidding(empty_intensifiers="off")), [])
 
     def test_hedge_connective_reviews_by_default(self):
-        hits = hits_for("That said, the plan holds.")
-        self.assertEqual(hits[0].rule, "HEDGE_CONNECTIVE")
+        hits = [h for h in hits_for("That said, the plan holds.") if h.rule == "HEDGE_CONNECTIVE"]
+        self.assertEqual(len(hits), 1)
         self.assertEqual(hits[0].severity, "review")
 
     def test_headings_are_checked_for_em_dash_only(self):
@@ -138,13 +138,19 @@ class ProfileRuleTests(unittest.TestCase):
         self.assertEqual(hits[0].severity, "block")
         self.assertEqual(rule_ids("The result is clear. Variation increases predictably across every condition we measured.", register=reg), [])
 
-    def test_tricolon_is_review(self):
+    def test_tricolon_is_info_by_default(self):
         hits = hits_for("The capabilities are the same, the knowledge the same, and the values the same.")
-        self.assertTrue(any(h.rule == "TRICOLON" and h.severity == "review" for h in hits))
+        self.assertTrue(any(h.rule == "TRICOLON" and h.severity == "info" for h in hits))
 
-    def test_asyndetic_tricolon_is_review(self):
-        hits = hits_for("The capabilities are the same, the knowledge the same, the apparent values the same.")
+    def test_tricolon_severity_is_configurable(self):
+        text = "The capabilities are the same, the knowledge the same, and the values the same."
+        hits = hits_for(text, register=forbidding(tricolon="review"))
         self.assertTrue(any(h.rule == "TRICOLON" and h.severity == "review" for h in hits))
+        self.assertEqual(rule_ids(text, register=forbidding(tricolon="off")), [])
+
+    def test_asyndetic_tricolon_is_info(self):
+        hits = hits_for("The capabilities are the same, the knowledge the same, the apparent values the same.")
+        self.assertTrue(any(h.rule == "TRICOLON" and h.severity == "info" for h in hits))
         self.assertEqual(rule_ids("We measured cost, time, scope."), [])
 
     def test_compressed_antithesis(self):

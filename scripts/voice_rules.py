@@ -15,6 +15,7 @@ from voice_segment import PROSE_KINDS, sentences_of  # noqa: E402
 
 BLOCK = "block"
 REVIEW = "review"
+INFO = "info"
 
 STANCE_OPENERS = ("honestly", "frankly", "importantly", "crucially", "interestingly", "surprisingly",
                   "notably", "admittedly", "evidently", "obviously", "clearly", "strikingly")
@@ -38,7 +39,10 @@ CONTRACTION = re.compile(
     r"it'll|that'll|there'll)\b", re.IGNORECASE)
 TRICOLON = re.compile(r"\b(\w+(?: \w+){0,3}), (\w+(?: \w+){0,3}), (?:and|or) (\w+(?: \w+){0,3})\b")
 TRICOLON_ASYNDETIC = re.compile(r"\b(\w+(?: \w+){1,4}), (\w+(?: \w+){1,4}), (\w+(?: \w+){1,4})[.!?]\s*$")
-ANTITHESIS_TAG = re.compile(r", not [^,.;:]{1,40}[.!?]|\brather than\b", re.IGNORECASE)
+ANTITHESIS_TAIL = re.compile(r",\s+not\s+([^,.;:!?]+?)\s*[.!?]?\s*$", re.IGNORECASE)
+ANTITHESIS_SHORT = re.compile(r",\s*not\s+\S|\brather than\b", re.IGNORECASE)
+ANTITHESIS_NEGATED_MAX_WORDS = 4
+SHORT_LINE_WORDS = 12
 BUILDUP_STORY = re.compile(r"\btells? an? \w+ story\b", re.IGNORECASE)
 ANNOUNCEMENT_HEAD_WORDS = 5
 MANNER_AFTER = re.compile(r"\s+(marked|labeled|labelled|visible|defined|separated|stated|shown|identified|"
@@ -261,7 +265,9 @@ def rule_staccato_run(segs, profile, reg):
     th = profile.get("thresholds", {})
     short = int(th.get("short_sentence_words", 8))
     run_len = int(th.get("staccato_run", 3))
-    severity = BLOCK if reg.get("targets", {}).get("pct_short_le5_max", None) == 0 else REVIEW
+    provisional = (profile.get("provisional") or {}).get("rules", [])
+    zero_target = reg.get("targets", {}).get("pct_short_le5_max", None) == 0
+    severity = BLOCK if zero_target and "pct_short_le5_max" not in provisional else REVIEW
     hits = []
     for seg in segs:
         if seg.kind != "prose":
@@ -278,7 +284,7 @@ def rule_staccato_run(segs, profile, reg):
 
 
 def rule_tricolon(segs, profile, reg):
-    level = reg.get("tricolon", REVIEW)
+    level = reg.get("tricolon", INFO)
     if level == "off":
         return []
     pred = lambda s: TRICOLON.search(s) is not None or TRICOLON_ASYNDETIC.search(s) is not None
@@ -286,12 +292,28 @@ def rule_tricolon(segs, profile, reg):
 
 
 def rule_compressed_antithesis(segs, profile, reg):
+    """', not X' tails. Short lines, headings, and labels flag on any tail or 'rather than'.
+    Longer prose flags only a closing ', not X.' whose negated half is short."""
     level = reg.get("compressed_antithesis", REVIEW)
     if level == "off":
         return []
-    pred = lambda s: ANTITHESIS_TAG.search(s) is not None
-    return _sentence_hits(segs, pred, "COMPRESSED_ANTITHESIS", level,
-                          "'X, not Y' or 'rather than' tag. Delete the tail if it adds nothing.", kinds=("prose",))
+    message = "'X, not Y' or 'rather than' tag. Delete the tail if it adds nothing."
+    hits = []
+    for seg in segs:
+        if seg.kind not in PROSE_KINDS + ("heading", "label"):
+            continue
+        if seg.kind in ("heading", "label") or len(re.findall(r"\S+", seg.text)) < SHORT_LINE_WORDS:
+            m = ANTITHESIS_SHORT.search(seg.text)
+            if m:
+                hits.append(Hit("COMPRESSED_ANTITHESIS", level, seg.line, _excerpt(seg.text, m.start(), 60), message))
+                continue
+        if seg.kind not in PROSE_KINDS:
+            continue
+        for sent in sentences_of(seg.text):
+            m = ANTITHESIS_TAIL.search(sent)
+            if m and len(m.group(1).split()) <= ANTITHESIS_NEGATED_MAX_WORDS:
+                hits.append(Hit("COMPRESSED_ANTITHESIS", level, seg.line, _excerpt(sent, m.start(), 60), message))
+    return hits
 
 
 def rule_protest_framing(segs, profile, reg):
@@ -359,15 +381,18 @@ def apply_overrides(hits, profile):
         level = overrides.get(h.rule)
         if level == "off":
             continue
-        if level in (REVIEW, BLOCK) and level != h.severity:
+        if level in (INFO, REVIEW, BLOCK) and level != h.severity:
             h = replace(h, severity=level)
         out.append(h)
     return out
 
 
-def run_rules(segs, profile, reg):
+def run_rules(segs, profile, reg, ctx=None):
+    from voice_rules_reader import CONTEXT_RULES, READER_RULES
     hits = []
-    for rule in RULES:
+    for rule in RULES + READER_RULES:
         hits.extend(rule(segs, profile, reg))
+    for rule in CONTEXT_RULES:
+        hits.extend(rule(segs, profile, reg, ctx or {}))
     hits = apply_overrides(hits, profile)
     return sorted(hits, key=lambda h: (h.line, h.rule))

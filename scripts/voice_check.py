@@ -4,6 +4,7 @@
 Usage:
     python voice_check.py <draft.md | -> [--profile profile.json] [--register NAME]
                                        [--json] [--strict] [--quiet]
+                                       [--explanation FILE] [--rejected FILE]
 
 Verdict: PASS (no hits), REVIEW (review hits only), BLOCK (any block hit).
 Exit:    0 PASS or REVIEW | 1 BLOCK | 2 input or profile error
@@ -51,9 +52,12 @@ def compute_drift(text: str, profile: dict, reg: dict) -> list:
         "pct_long_ge30": stats.get("pct_long_ge30"),
         "comma_per_sentence": punct.get("comma_per_sentence"),
         "hedge_per_100w_max": hb.get("hedge_per_100w"),
+        "hedge_per_100w_mean": hb.get("hedge_per_100w"),
         "boost_per_100w_max": hb.get("boost_per_100w"),
         "first_sg_per_100w_max": pron.get("first_sg_per_100w"),
     }
+    tolerance = float(profile.get("thresholds", {}).get("hedge_tolerance", 0.5))
+    provisional = (profile.get("provisional") or {}).get("rules", [])
     drift = []
     for key, target in targets.items():
         value = observed.get(key)
@@ -61,26 +65,32 @@ def compute_drift(text: str, profile: dict, reg: dict) -> list:
             continue
         if isinstance(target, list):
             out = value < target[0] or value > target[1]
+        elif key == "hedge_per_100w_mean":
+            out = abs(value - target) > tolerance
         else:
             out = value > target
         if out:
-            drift.append({"metric": key.replace("_max", ""), "observed": value, "target": target, "severity": REVIEW})
+            entry = {"metric": key.replace("_max", ""), "observed": value, "target": target, "severity": REVIEW}
+            if "targets" in provisional or key in provisional:
+                entry["provisional"] = True
+            drift.append(entry)
     return drift
 
 
-def check_text(text: str, profile: dict, register: str, draft_name: str = "-", skip_citations: bool = True) -> dict:
+def check_text(text: str, profile: dict, register: str, draft_name: str = "-", skip_citations: bool = True,
+               explanation=None, rejected=None) -> dict:
     reg = resolve_register(profile, register)
     segs = segment(text)
     if skip_citations:
         segs = [s for s in segs if not CITATION_HEADINGS.match(s.heading or "")]
-    hits = run_rules(segs, profile, reg)
+    hits = run_rules(segs, profile, reg, {"explanation": explanation, "rejected": rejected or []})
     drift = compute_drift(prose_text(segs), profile, reg)
     counts = {}
     for h in hits:
         counts[h.rule] = counts.get(h.rule, 0) + 1
     if any(h.severity == BLOCK for h in hits):
         verdict = "BLOCK"
-    elif hits or drift:
+    elif any(h.severity == REVIEW for h in hits) or drift:
         verdict = "REVIEW"
     else:
         verdict = "PASS"
@@ -103,10 +113,14 @@ def render(result: dict, quiet: bool) -> str:
         for h in result["hits"]:
             lines.append("%-6s L%-4d %-24s %s  | %s" % (h["severity"], h["line"], h["rule"], h["message"], h["excerpt"]))
         for d in result["drift"]:
-            lines.append("review drift %-22s observed=%s target=%s" % (d["metric"], d["observed"], d["target"]))
+            lines.append("review drift %-22s observed=%s target=%s%s" % (
+                d["metric"], d["observed"], d["target"], " (provisional)" if d.get("provisional") else ""))
         lines.append("verdict=%s block=%d review=%d drift=%d" % (
             result["verdict"], sum(1 for h in result["hits"] if h["severity"] == BLOCK),
             sum(1 for h in result["hits"] if h["severity"] == REVIEW), len(result["drift"])))
+        info = sum(1 for h in result["hits"] if h["severity"] == "info")
+        if info:
+            lines.append("info=%d (reported, no effect on the verdict)" % info)
     return "\n".join(lines)
 
 
@@ -118,6 +132,8 @@ def main(argv=None) -> int:
     parser.add_argument("--json", action="store_true", help="Print the JSON result instead of the table")
     parser.add_argument("--strict", action="store_true", help="Treat review hits and drift as blocking")
     parser.add_argument("--quiet", action="store_true", help="Print only the final token")
+    parser.add_argument("--explanation", help="File with the approved explanation. Every number and name in the draft must appear in it")
+    parser.add_argument("--rejected", help="File with one rejected phrase per line. Any of them in the draft blocks")
     parser.add_argument("--check-citations", action="store_true",
                         help="Also check text under Sources, References, and similar headings (skipped by default)")
     args = parser.parse_args(argv)
@@ -140,7 +156,17 @@ def main(argv=None) -> int:
                 print("ERROR: " + err)
             return 2
     register = args.register or profile.get("default_register", "default")
-    result = check_text(text, profile, register, args.draft, skip_citations=not args.check_citations)
+    explanation, rejected = None, None
+    try:
+        if args.explanation:
+            explanation = Path(args.explanation).read_text(encoding="utf-8")
+        if args.rejected:
+            rejected = [ln.strip() for ln in Path(args.rejected).read_text(encoding="utf-8").splitlines() if ln.strip()]
+    except OSError as exc:
+        print("ERROR: cannot read context file: %s" % exc)
+        return 2
+    result = check_text(text, profile, register, args.draft, skip_citations=not args.check_citations,
+                        explanation=explanation, rejected=rejected)
     if args.strict and result["verdict"] == "REVIEW":
         result["verdict"] = "BLOCK"
     if args.json:

@@ -1,0 +1,37 @@
+# Reader-text goldens added in v3. Every passage is made up. One JSON object per line.
+{"id": "r-caveat-001", "text": "The kettle heats water to 90 degrees in two minutes.\n\nThe lid locks while the water is hot.\n\nThat said, the base takes a moment to cool.", "expect": "review", "rules": ["CLOSING_CAVEAT"]}
+{"id": "r-caveat-002", "text": "The kettle heats water to 90 degrees in two minutes.\n\nThe lid locks while the water is hot.\n\nKeep in mind that the handle gets warm.", "expect": "review", "rules": ["CLOSING_CAVEAT"]}
+{"id": "r-caveat-003", "text": "The kettle heats water to 90 degrees in two minutes.\n\nThe lid locks while the water is hot.\n\nHowever, some units ship without the filter.", "expect": "review", "rules": ["CLOSING_CAVEAT"]}
+{"id": "r-caveat-004", "text": "The kettle heats water to 90 degrees in two minutes.\n\nThe lid locks while the water is hot.\n\nThe base takes a minute to cool before it can be moved.", "expect": "pass"}
+{"id": "r-caveat-005", "text": "However, the pump runs quietly.", "expect": "pass", "note": "However in a one-paragraph text is not a closing caveat"}
+{"id": "r-antith-001", "text": "# Clarity, not clutter", "expect": "review", "rules": ["COMPRESSED_ANTITHESIS"]}
+{"id": "r-antith-002", "text": "Built for walkers rather than drivers.", "expect": "review", "rules": ["COMPRESSED_ANTITHESIS"]}
+{"id": "r-antith-003", "text": "Owners describe the pump after six weeks in three kitchens as steady, not noisy.", "expect": "review", "rules": ["COMPRESSED_ANTITHESIS"]}
+{"id": "r-antith-004", "text": "The pump runs at 40 decibels, which is quieter than a fridge, and it does not rattle.", "expect": "pass"}
+{"id": "r-antith-005", "text": "Most owners chose the small model rather than the large one because the counter in a flat has little free space.", "expect": "pass", "note": "rather than inside a long sentence is a real comparison"}
+{"id": "r-benefit-001", "text": "The app syncs notes across devices, so you can pick up where you left off.", "expect": "review", "rules": ["BENEFIT_TAIL"]}
+{"id": "r-benefit-002", "text": "Each report lists open orders, helping you plan the week.", "expect": "review", "rules": ["BENEFIT_TAIL"]}
+{"id": "r-benefit-003", "text": "The filter removes lead from the water, ensuring clean drinking water.", "expect": "review", "rules": ["BENEFIT_TAIL"]}
+{"id": "r-benefit-004", "text": "The app syncs notes across devices every minute.", "expect": "pass"}
+{"id": "r-benefit-005", "text": "Each report lists open orders by due date.", "expect": "pass"}
+{"id": "r-tagline-001", "text": "Clarity. Speed. Results.", "expect": "review", "rules": ["TAGLINE"]}
+{"id": "r-tagline-002", "text": "Simplicity and power for every team", "expect": "review", "rules": ["TAGLINE"]}
+{"id": "r-tagline-003", "text": "Excellence without compromise", "expect": "review", "rules": ["TAGLINE"]}
+{"id": "r-tagline-004", "text": "Quality control starts at the loading dock.", "expect": "pass"}
+{"id": "r-tagline-005", "text": "The pump has a three-year warranty.", "expect": "pass"}
+{"id": "r-tagline-006", "text": "Open Monday to Friday", "expect": "pass"}
+{"id": "r-length-001", "text": "The pump is quiet and small.", "expect": "block", "rules": ["LENGTH_BAND"], "register_overrides": {"length": {"min": 20, "max": 60}}}
+{"id": "r-length-002", "text": "The pump moves water from the tank to the kettle in about forty seconds. It stays quiet while it runs. The lid locks until the water has cooled, and the base stays cool enough to touch. A small light shows when the tank is empty. Owners refill it at the tap and press one button to start again after that. The filter sits behind a flap on the left side and slides out without tools. Most households change it twice a year, and the spare ships in the box with the first unit.", "expect": "block", "rules": ["LENGTH_BAND"], "register_overrides": {"length": {"min": 20, "max": 60}}}
+{"id": "r-length-003", "text": "The pump moves water from the tank to the kettle in about forty seconds. It stays quiet while it runs, and the lid locks until the water has cooled.", "expect": "pass", "register_overrides": {"length": {"min": 20, "max": 60}}}
+{"id": "r-length-004", "text": "The pump moves water from the tank to the kettle in about forty seconds. It stays quiet while it runs. The lid locks until the water has cooled, and the base stays cool enough to touch. A small light shows when the tank is empty. Owners refill it at the tap and press one button to start again after that.", "expect": "pass", "register_overrides": {"length": {"min": 20, "max": 60}}}
+{"id": "r-addition-001", "text": "The Fernwood pump holds 3 litres.", "expect": "review", "rules": ["ADDITION"], "explanation": "The Fernwood pump moves water from the tank to the kettle. It holds 2 litres and runs for 40 minutes."}
+{"id": "r-addition-002", "text": "The Fernwood pump was built by Marlow Labs.", "expect": "review", "rules": ["ADDITION"], "explanation": "The Fernwood pump moves water from the tank to the kettle. It holds 2 litres and runs for 40 minutes."}
+{"id": "r-addition-003", "text": "Leak rates fell by 12% after the redesign.", "expect": "review", "rules": ["ADDITION"], "explanation": "The Fernwood pump moves water from the tank to the kettle. It holds 2 litres and runs for 40 minutes."}
+{"id": "r-addition-004", "text": "The Fernwood pump holds 2 litres and runs for 40 minutes.", "expect": "pass", "explanation": "The Fernwood pump moves water from the tank to the kettle. It holds 2 litres and runs for 40 minutes."}
+{"id": "r-addition-005", "text": "The pump moves water from the tank to the kettle.", "expect": "pass", "explanation": "The Fernwood pump moves water from the tank to the kettle. It holds 2 litres and runs for 40 minutes."}
+{"id": "r-repeat-001", "text": "This kettle is built for the way you live.", "expect": "block", "rules": ["REPEATED_PHRASE"], "rejected": ["built for the way you live", "all in one place"]}
+{"id": "r-repeat-002", "text": "Notes, tasks and files, All  In One\nPlace.", "expect": "block", "rules": ["REPEATED_PHRASE"], "rejected": ["built for the way you live", "all in one place"]}
+{"id": "r-repeat-003", "text": "This kettle is built for people who cook every day.", "expect": "pass", "rejected": ["built for the way you live", "all in one place"]}
+{"id": "r-repeat-004", "text": "The files sit in one folder.", "expect": "pass", "rejected": ["built for the way you live", "all in one place"]}
+{"id": "r-tricolon-001", "text": "The pump is quiet, the lid is safe, and the base is cool.", "expect": "review", "rules": ["TRICOLON"], "register_overrides": {"tricolon": "review"}}
+{"id": "r-tricolon-002", "text": "The pump is quiet, the lid is safe, and the base is cool.", "expect": "pass", "rules": ["TRICOLON"], "note": "default severity is info"}

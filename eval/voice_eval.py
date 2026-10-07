@@ -4,6 +4,7 @@
 Subcommands:
   score    --goldens FILE [--profile FILE] [--register NAME] [--gate BASELINE] [--tolerance 0.0] [--json OUT]
   baseline --goldens FILE [--profile FILE] [--register NAME] --output BASELINE
+  verify   --profile FILE [--register NAME] [--strict] SAMPLE...
   selftest
 
 Metrics: block_recall, review_recall, false_alarm_rate, review_noise, per-rule counts.
@@ -11,6 +12,7 @@ Exit: 0 ok | 1 a golden failed or the gate failed | 2 bad input
 The last stdout line is VOICE_EVAL_OK or VOICE_EVAL_FAILED. Stdlib only.
 """
 import argparse
+import copy
 import json
 import sys
 from pathlib import Path
@@ -56,7 +58,13 @@ def _bucket(per_rule, rule):
 def score(goldens: list, profile: dict, register: str) -> dict:
     rows, per_rule = [], {}
     for g in goldens:
-        result = check_text(g["text"], profile, g.get("register", register), g["id"])
+        reg_name = g.get("register", register)
+        prof = profile
+        if g.get("register_overrides"):
+            prof = copy.deepcopy(profile)
+            prof.setdefault("registers", {}).setdefault(reg_name, {}).update(g["register_overrides"])
+        result = check_text(g["text"], prof, reg_name, g["id"],
+                            explanation=g.get("explanation"), rejected=g.get("rejected"))
         hit_rules = set(result["counts"])
         expected = set(g.get("rules", []))
         verdict = result["verdict"]
@@ -65,14 +73,14 @@ def score(goldens: list, profile: dict, register: str) -> dict:
         elif g["expect"] == "review":
             ok = verdict in ("REVIEW", "BLOCK") and expected <= hit_rules
         else:
-            ok = verdict != "BLOCK"
+            ok = verdict != "BLOCK" and expected <= hit_rules
         rows.append({"id": g["id"], "expect": g["expect"], "verdict": verdict, "hits": sorted(hit_rules), "ok": ok})
         for rule in expected:
             b = _bucket(per_rule, rule)
             b["expected"] += 1
             b["hit" if rule in hit_rules else "missed"] += 1
         if g["expect"] == "pass":
-            for rule in hit_rules:
+            for rule in hit_rules - expected:
                 _bucket(per_rule, rule)["spurious"] += 1
 
     def share(kind, pred):
@@ -115,6 +123,19 @@ def _report(result: dict) -> None:
             print("FAIL %s expect=%s verdict=%s hits=%s" % (row["id"], row["expect"], row["verdict"], ",".join(row["hits"])))
 
 
+def verify_files(paths: list, profile: dict, register: str, strict: bool = False) -> dict:
+    """Score paragraphs a person generated with any agent. Each file is one sample.
+    A sample fails on BLOCK, and with strict on REVIEW or drift as well."""
+    rows = []
+    for path in paths:
+        text = Path(path).read_text(encoding="utf-8")
+        result = check_text(text, profile, register, str(path))
+        bad = result["verdict"] == "BLOCK" or (strict and result["verdict"] == "REVIEW")
+        rows.append({"file": str(path), "verdict": result["verdict"], "ok": not bad,
+                     "hits": result["hits"], "drift": result["drift"]})
+    return {"rows": rows, "ok": bool(rows) and all(r["ok"] for r in rows)}
+
+
 def _selftest() -> int:
     fix = ROOT / "tests" / "fixtures"
     goldens = [
@@ -141,10 +162,34 @@ def main(argv=None) -> int:
             p.add_argument("--json")
         else:
             p.add_argument("--output", required=True)
+    v = sub.add_parser("verify")
+    v.add_argument("--profile", required=True)
+    v.add_argument("--register")
+    v.add_argument("--strict", action="store_true")
+    v.add_argument("samples", nargs="+")
     sub.add_parser("selftest")
     args = parser.parse_args(argv)
     if args.cmd == "selftest":
         return _selftest()
+    if args.cmd == "verify":
+        try:
+            profile = load_profile(args.profile)
+            register = args.register or profile.get("default_register", "default")
+            outcome = verify_files(args.samples, profile, register, args.strict)
+        except (OSError, ValueError) as exc:
+            print("ERROR: %s" % exc)
+            return 2
+        for row in outcome["rows"]:
+            print("%s %s" % ("ok  " if row["ok"] else "FAIL", row["file"]))
+            print("     verdict=%s hits=%d drift=%d" % (row["verdict"], len(row["hits"]), len(row["drift"])))
+            for h in row["hits"]:
+                if h["severity"] != "info":
+                    print("     %-6s L%-4d %-22s %s" % (h["severity"], h["line"], h["rule"], h["message"]))
+            for d in row["drift"]:
+                print("     drift  %-22s observed=%s target=%s%s" % (
+                    d["metric"], d["observed"], d["target"], " (provisional)" if d.get("provisional") else ""))
+        print("VOICE_EVAL_OK" if outcome["ok"] else "VOICE_EVAL_FAILED")
+        return 0 if outcome["ok"] else 1
     try:
         goldens = load_goldens(args.goldens)
         profile = load_profile(args.profile) if args.profile else DEFAULT_PROFILE

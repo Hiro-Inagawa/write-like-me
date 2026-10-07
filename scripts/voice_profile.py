@@ -3,6 +3,7 @@
 
 Subcommands:
   validate <profile.json>                          exit 0 and print VOICE_PROFILE_VALID
+  preflight [--corpus-words N]                     print dependency and corpus-size notes before analysis
   init --voice NAME --register NAME --from-stylometry FILE --output FILE
                                                    build a profile from a stylometry register JSON
 
@@ -17,7 +18,9 @@ from pathlib import Path
 
 SCHEMA_VERSION = 1
 TRISTATE = ("off", "review", "block")
+LEVELS = ("off", "info", "review", "block")
 POLICY = ("off", "allowed", "review", "forbidden")
+MIN_CORPUS_WORDS = 20000
 
 DEFAULT_REGISTER = {
     "semicolons": "off",
@@ -26,8 +29,12 @@ DEFAULT_REGISTER = {
     "questions": "off",
     "hedge_connectives": "review",
     "meta_commentary": "off",
-    "tricolon": "review",
+    "tricolon": "info",
     "compressed_antithesis": "review",
+    "closing_caveat": "review",
+    "benefit_tail": "review",
+    "tagline": "review",
+    "additions": "review",
     "empty_intensifiers": "block",
     "exclamations": "off",
     "targets": {},
@@ -39,7 +46,8 @@ DEFAULT_PROFILE = {
     "generated": "",
     "source": "references/00-universal-baseline.md",
     "default_register": "default",
-    "thresholds": {"short_sentence_words": 8, "staccato_run": 3, "min_words_for_drift": 150},
+    "thresholds": {"short_sentence_words": 8, "staccato_run": 3, "min_words_for_drift": 150,
+                   "hedge_tolerance": 0.5},
     "bans": {
         "intensifiers": ["clearly", "obviously", "genuine", "genuinely", "fascinating",
                           "striking", "strikingly", "real and structured"],
@@ -54,13 +62,16 @@ DEFAULT_PROFILE = {
                               "state-of-the-art", "game-changing"],
         "evaluative_review": ["powerful", "robust", "significant", "important", "novel", "unique",
                                "compelling", "elegant", "fascinating", "remarkable", "exceptional"],
+        "caveat_phrases": ["one thing to note", "that said", "worth knowing", "keep in mind", "to be fair",
+                            "one caveat", "a small caveat", "note that", "just so you"],
         "extra_phrases": [],
     },
     "registers": {},
 }
 
 RANGE_KEYS = ("mean_sentence_words", "pct_long_ge30", "comma_per_sentence")
-MAX_KEYS = ("pct_short_le5_max", "hedge_per_100w_max", "boost_per_100w_max", "first_sg_per_100w_max")
+MAX_KEYS = ("pct_short_le5_max", "hedge_per_100w_max", "boost_per_100w_max", "first_sg_per_100w_max",
+            "hedge_per_100w_mean")
 
 
 def load_profile(path) -> dict:
@@ -93,10 +104,22 @@ def validate_profile(profile: dict) -> list:
         if not isinstance(value, (int, float)) or value < 0:
             errors.append("thresholds.%s must be a non-negative number" % key)
     for rule, level in (profile.get("rule_overrides") or {}).items():
-        if level not in TRISTATE:
-            errors.append("rule_overrides.%s must be one of %s" % (rule, ", ".join(TRISTATE)))
+        if level not in LEVELS:
+            errors.append("rule_overrides.%s must be one of %s" % (rule, ", ".join(LEVELS)))
+    prov = profile.get("provisional")
+    if prov is not None and not (isinstance(prov, dict) and isinstance(prov.get("rules", []), list)
+                                 and all(isinstance(r, str) for r in prov.get("rules", []))):
+        errors.append("provisional must be an object with a list of rule names in 'rules'")
     for name, reg in (profile.get("registers") or {}).items():
         for key, value in reg.items():
+            if key == "length":
+                ok = (isinstance(value, dict) and set(value) <= {"min", "max"}
+                      and all(isinstance(v, (int, float)) and v >= 0 for v in value.values()))
+                if ok and "min" in value and "max" in value and value["min"] > value["max"]:
+                    ok = False
+                if not ok:
+                    errors.append("registers.%s.length must be {min, max} with min <= max" % name)
+                continue
             if key == "targets":
                 for tkey, tval in value.items():
                     if tkey in RANGE_KEYS and not (isinstance(tval, list) and len(tval) == 2 and tval[0] <= tval[1]):
@@ -108,7 +131,12 @@ def validate_profile(profile: dict) -> list:
             elif key in ("semicolons", "contractions", "questions"):
                 if value not in POLICY:
                     errors.append("registers.%s.%s must be one of %s" % (name, key, ", ".join(POLICY)))
-            elif key in ("announcement_colon", "hedge_connectives", "meta_commentary", "tricolon", "compressed_antithesis", "empty_intensifiers", "exclamations"):
+            elif key == "tricolon":
+                if value not in LEVELS:
+                    errors.append("registers.%s.tricolon must be one of %s" % (name, ", ".join(LEVELS)))
+            elif key in ("announcement_colon", "hedge_connectives", "meta_commentary", "compressed_antithesis",
+                         "closing_caveat", "benefit_tail", "tagline", "additions",
+                         "empty_intensifiers", "exclamations"):
                 if value not in TRISTATE:
                     errors.append("registers.%s.%s must be one of %s" % (name, key, ", ".join(TRISTATE)))
             else:
@@ -129,6 +157,8 @@ def init_from_stylometry(voice: str, register: str, stylo: dict) -> dict:
     punct = stylo["punctuation"]
     hb = stylo["hedging_booster"]
     pron = stylo["pronouns"]
+    words = (stylo.get("corpus_stats") or {}).get("word_count")
+    small = isinstance(words, (int, float)) and words < MIN_CORPUS_WORDS
     profile = copy.deepcopy(DEFAULT_PROFILE)
     profile["voice"] = voice
     profile["generated"] = date.today().isoformat()
@@ -139,22 +169,57 @@ def init_from_stylometry(voice: str, register: str, stylo: dict) -> dict:
         "pct_short_le5_max": round(max(sent["pct_short_le5"] * 1.5, sent["pct_short_le5"]), 3),
         "pct_long_ge30": [round(max(0.0, sent["pct_long_ge30"] - 0.05), 2), round(min(1.0, sent["pct_long_ge30"] + 0.05), 2)],
         "comma_per_sentence": _rng(punct["comma_per_sentence"], 0.15, digits=1),
-        "hedge_per_100w_max": round(max(0.3, hb["hedge_per_100w"] * 2), 2),
+        "hedge_per_100w_mean": round(hb["hedge_per_100w"], 3),
         "boost_per_100w_max": round(hb["boost_per_100w"], 2),
         "first_sg_per_100w_max": round(max(0.5, pron["first_sg_per_100w"] * 1.5), 2),
     }
+    zero_semicolons = punct.get("semicolon_per_1000w", 1) == 0
     reg = {
-        "semicolons": "forbidden" if punct.get("semicolon_per_1000w", 1) == 0 else "review",
+        "semicolons": "forbidden" if (zero_semicolons and not small) else "review",
         "announcement_colon": "review",
         "contractions": "off",
         "questions": "off",
         "hedge_connectives": "review",
-        "tricolon": "review",
+        "tricolon": "info",
         "compressed_antithesis": "review",
         "targets": targets,
     }
     profile["registers"] = {register: reg}
+    if small:
+        profile["provisional"] = provisional_entry(words, zero_semicolons, sent["pct_short_le5"] == 0)
     return profile
+
+
+def provisional_entry(words, zero_semicolons: bool, zero_short: bool) -> dict:
+    """Rules that rest on a corpus below MIN_CORPUS_WORDS. The author confirms or removes each one."""
+    rules = ["targets"]
+    if zero_semicolons:
+        rules.append("semicolons")
+    if zero_short:
+        rules.append("pct_short_le5_max")
+    return {
+        "words": int(words),
+        "min_words": MIN_CORPUS_WORDS,
+        "rules": rules,
+        "note": "The corpus is below %d words. Each listed rule is a candidate. Remove its name from this list "
+                "once the author has confirmed it against a new text." % MIN_CORPUS_WORDS,
+    }
+
+
+def preflight(corpus_words=None) -> list:
+    """Return one line per missing optional package and one for a small corpus."""
+    lines = []
+    for module, extra in (("textstat", "readability scores"),
+                          ("spacy", "POS rhythm, dependency depth, passive voice")):
+        try:
+            __import__(module)
+        except ImportError:
+            lines.append("optional package %s is not installed, so %s will be skipped. pip install %s"
+                         % (module, extra, module))
+    if corpus_words is not None and corpus_words < MIN_CORPUS_WORDS:
+        lines.append("corpus has %d words, below %d. Every distribution-based rule will be emitted as provisional."
+                     % (corpus_words, MIN_CORPUS_WORDS))
+    return lines
 
 
 def main(argv=None) -> int:
@@ -167,7 +232,15 @@ def main(argv=None) -> int:
     i.add_argument("--register", required=True)
     i.add_argument("--from-stylometry", required=True)
     i.add_argument("--output", required=True)
+    pf = sub.add_parser("preflight", help="report missing optional packages and a small corpus before analysis")
+    pf.add_argument("--corpus-words", type=int)
     args = parser.parse_args(argv)
+
+    if args.cmd == "preflight":
+        for line in preflight(args.corpus_words):
+            print("NOTE: " + line)
+        print("VOICE_PREFLIGHT_DONE")
+        return 0
 
     if args.cmd == "validate":
         try:
