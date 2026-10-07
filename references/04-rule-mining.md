@@ -31,6 +31,9 @@ Look for features at the extremes of the distribution. Thresholds:
 | 0% short sentences (≤5 words) | "no fragment sentences" (provisional below 20,000 words) |
 | 100% long sentences (≥30 words) | "always writes in extended sentences" — unlikely, flag as anomaly |
 | Booster tokens = 0 | "never uses empty intensifiers" |
+| Contractions = 0 in the primary register (`contractions.count` and `contractions.per_100w` in the stylometry JSON), corpus of 20,000 words or more | candidate rule "no contractions", set as `contractions: forbidden` once the author confirms it |
+| Contractions = 0 in the primary register, corpus under 20,000 words | the same candidate rule, provisional, marked for the author's confirmation |
+| Contractions above 0 | no rule. Report the rate per 100 words so the author sees it |
 | Hedging rate < 0.2/100w | "hedges sparingly; calibrated to actual uncertainty" |
 
 The general English baseline comparison is approximate. For function words, use the Mosteller & Wallace (1964) frequency tables as baseline. For sentence length, educated English prose typically runs 18–25 words/sentence.
@@ -46,6 +49,12 @@ Look for sentence shapes and patterns that are absent from the corpus:
 - **Rhetorical questions.** Count question marks. If few and only in actual inquiry (not setup), "no rhetorical questions."
 - **Second-person instructions.** "You should..." in essay context. If absent, "no instructional second-person in formal prose."
 - **Announcement colons.** "The result: X". If absent, "no announcement colons."
+
+---
+
+## Conflicts with the universal baseline
+
+After the three sources, run `python scripts/corpus_conflicts.py <corpus>`. It applies the universal baseline to the author's own writing and lists every rule that blocks, with counts and examples. A block in the author's own text means the author uses a construction the baseline forbids, for example `not only ... but also`. Present each one in Stage 5 as a conflict and let the author decide. Keeping the habit becomes an entry in `rule_overrides` of `profile.json`. Dropping the habit leaves the rule in force.
 
 ---
 

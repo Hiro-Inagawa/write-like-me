@@ -119,7 +119,7 @@ If the preview shows mostly very short turns ("ok", "yes", "can you do X?") and 
 ## Minimum corpus size
 
 After extraction, check total word count:
-- **< 5,000 words:** Extreme caution. Zero and one counts are provisional candidates for the author to confirm.
-- **5,000–20,000 words:** Directional values only. Every distribution-based rule is provisional. Warn in provenance file.
-- **> 20,000 words:** Distributional features are reliable.
+- **< 5,000 words:** The floor. The build stops. Collect more writing.
+- **5,000 to 20,000 words:** Directional values only. Every distribution-based rule is provisional, and zero and one counts are candidates for the author to confirm. Warn in provenance file.
+- **20,000 words or more:** Distributional features are reliable.
 - **> 100,000 words:** High confidence. Rare features (hapax legomena, uncommon connectives) are measurable.

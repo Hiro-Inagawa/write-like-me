@@ -8,7 +8,7 @@ How to find the right source material for a voice skill.
 
 A voice skill requires prose that the author actually wrote, in a register that will be used as the writing target. The ideal corpus has:
 
-- **At least 5,000 words in the primary register** (the one that will be the writing target). Below 5,000 words, distributional features have high variance. Below 2,000 words, only the most extreme features are reliable.
+- **At least 20,000 words in the primary register** (the one that will be the writing target) for reliable distributions. 5,000 words is the floor. Below it the build stops, because distributional features have too much variance. Between 5,000 and 20,000 words the build continues and every distribution rule is provisional.
 - **Enough variety of topic** that the features measured reflect habit rather than subject matter. One long essay on a single topic may overfit.
 - **No ghost-writing or heavily edited material** unless the author approved every sentence. Co-written content contaminates the profile.
 
@@ -66,4 +66,4 @@ Always exclude:
 
 ## When the corpus is small
 
-If the total filtered corpus is under 20,000 words, warn: "distributional features may be unreliable." The build continues, and every rule that rests on a distribution is emitted as provisional (see `04-rule-mining.md`). Flag in the provenance file which metrics are based on small-sample data. A count of 0 in a small corpus is a candidate for the author to confirm. It is not a ban. Rules that come from the author's own rule files stay firm.
+Reliable distributions need 20,000 words. Below 5,000 words the build stops. Between 5,000 and 20,000 words the build continues and every distribution rule is provisional. If the total filtered corpus is under 20,000 words, warn: "distributional features may be unreliable." Between 5,000 and 20,000 words the build continues, and every rule that rests on a distribution is emitted as provisional (see `04-rule-mining.md`). Flag in the provenance file which metrics are based on small-sample data. A count of 0 in a small corpus is a candidate for the author to confirm. It is not a ban. Rules that come from the author's own rule files stay firm.

@@ -92,6 +92,12 @@ None of these patterns appear at high rates in the writing of individual human a
 
 ---
 
+## Policy values
+
+Three register keys use a four-state policy: `semicolons`, `contractions` and `questions`. The allowed values are in `templates/profile.schema.json`. `off` and `allowed` do not check the rule. `review` reports a review hit that the author decides. `forbidden` reports a block hit. The behaviour is the same for all three keys. `voice_profile.py init` starts `contractions` and `questions` as `off` and prints a line that says so. Every other per-register rule takes off, review or block, and `tricolon` also takes info.
+
+---
+
 ## What is enforced by code
 
 Every rule below runs through `scripts/voice_check.py` on a draft and is scored against golden examples by `eval/voice_eval.py`. The severity column is the universal default before any profile applies an override. A profile can raise a `review` rule to `block`, or turn an `off` rule on through the listed knob.
@@ -106,7 +112,7 @@ Every rule below runs through `scripts/voice_check.py` on a draft and is scored 
 | `SUMMARY_OPENER` | Paragraph opens with a summary phrase such as in conclusion | block | none |
 | `EVALUATIVE_ADJECTIVE` | An unsupported evaluative adjective from the block list, placed before a noun | block | `bans.evaluative_block` |
 | `EVALUATIVE_ADJECTIVE_SOFT` | An unsupported evaluative adjective from the review list, placed before a noun | review | `bans.evaluative_review` |
-| `SEMICOLON_PROSE` | Semicolon inside a prose paragraph | off | `register.semicolons` = forbidden |
+| `SEMICOLON_PROSE` | Semicolon inside a prose paragraph | off | `register.semicolons` = review (review hit) or forbidden (block hit) |
 | `ANNOUNCEMENT_COLON` | Mid-sentence colon introducing a clause | review | `register.announcement_colon` = block |
 | `STACCATO_RUN` | A run of consecutive short sentences at or above the staccato threshold | review | block when `targets.pct_short_le5_max` is 0 |
 | `TRICOLON` | Three short comma-separated items joined by and or or | info (reported, no effect on the verdict) | `register.tricolon` = off, info, review or block |
@@ -121,8 +127,8 @@ Every rule below runs through `scripts/voice_check.py` on a draft and is scored 
 | `BUILDUP_BEFORE_DATA` | A colon directly followed by a number mid-sentence, or a "tells a story" phrase | block | none |
 | `EMPTY_INTENSIFIER` | An empty intensifier such as clearly, obviously, or genuinely | block | `bans.intensifiers` |
 | `HEDGE_CONNECTIVE` | A hedge connective such as that said or worth knowing | review | `register.hedge_connectives` = block |
-| `CONTRACTION` | A contraction from the closed detection list | off | `register.contractions` = forbidden |
-| `RHETORICAL_QUESTION` | A question mark in prose | off | `register.questions` = forbidden gives review, block escalates further |
+| `CONTRACTION` | A contraction from the closed detection list | off | `register.contractions` = review (review hit) or forbidden (block hit) |
+| `RHETORICAL_QUESTION` | A question mark in prose | off | `register.questions` = review (review hit) or forbidden (block hit) |
 | `EXCLAMATION` | An exclamation mark ending a prose sentence | off | `register.exclamations` = review or block |
 | `META_COMMENTARY` | A meta-commentary phrase such as great question or hope this helps | off | `register.meta_commentary` = block |
 | `DRIFT_*` | Sentence length, sentence-length distribution, comma rate, hedge density, booster density, and first-person density measured against the profile targets | review | `register.targets` |

@@ -11,7 +11,7 @@ When a text is written in chat and not to a file, the post-write hook cannot see
 
 ## The settings.json entries
 
-Add both entries to `~/.claude/settings.json`. Replace `NAME` with the folder name of the voice under `voices/`. The path assumes the skill is installed at `~/.claude/skills/write-like-me`. Change it when the skill lives elsewhere.
+Add both entries to `~/.claude/settings.json`. Replace `NAME` with the folder name of the voice under `voices/`. Replace `<SKILL_FOLDER>` with the folder this skill is installed in. On Windows that is, for example, `C:\\Users\\you\\.claude\\skills\\write-like-me` (backslashes doubled inside JSON). On macOS and Linux it is, for example, `$HOME/.claude/skills/write-like-me`.
 
 ```json
 {
@@ -21,7 +21,7 @@ Add both entries to `~/.claude/settings.json`. Replace `NAME` with the folder na
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$HOME/.claude/skills/write-like-me/scripts/writing-gate-hook.mjs\" prompt --voice NAME"
+            "command": "node \"<SKILL_FOLDER>/scripts/writing-gate-hook.mjs\" prompt --voice NAME"
           }
         ]
       }
@@ -32,7 +32,7 @@ Add both entries to `~/.claude/settings.json`. Replace `NAME` with the folder na
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$HOME/.claude/skills/write-like-me/scripts/writing-gate-hook.mjs\" post-write --voice NAME"
+            "command": "node \"<SKILL_FOLDER>/scripts/writing-gate-hook.mjs\" post-write --voice NAME"
           }
         ]
       }
@@ -41,13 +41,18 @@ Add both entries to `~/.claude/settings.json`. Replace `NAME` with the folder na
 }
 ```
 
+The same command on Windows: `node "C:\Users\you\.claude\skills\write-like-me\scripts\writing-gate-hook.mjs" post-write --voice NAME`. The same command on macOS and Linux: `node "$HOME/.claude/skills/write-like-me/scripts/writing-gate-hook.mjs" post-write --voice NAME`.
+
 If `settings.json` already has a `hooks` object, add the two arrays to it and keep the existing entries. The voice can also come from the environment variable `WRITE_LIKE_ME_VOICE`, and then `--voice NAME` is left out. When neither is set, the hook uses the voice in `voices/` if exactly one exists. With no voice, the checker runs the universal baseline without a profile.
 
 ## Where the hook looks
 
+The voice folder is `voices/NAME/` inside the folder this skill is installed in. Any other location works when the hook is pointed at its profile, with the environment variable `WRITE_LIKE_ME_PROFILE` or with a `profile` entry in `voices/NAME/hook.json`.
+
 - The checker is `scripts/voice_check.py`, found relative to the skill folder.
-- The profile is `voices/NAME/profile.json`. A missing profile means the universal baseline runs.
-- The path rules are in `voices/NAME/hook.json`. The file is optional.
+- The profile is `voices/NAME/profile.json`, or the file named by `WRITE_LIKE_ME_PROFILE` or by `profile` in `hook.json`. A missing profile means the universal baseline runs.
+- The path rules are in `hook.json` in the folder of the profile in use. The file is optional.
+- The approved explanation and the rejected phrases are passed to the checker when they are named, as described below.
 
 ## hook.json
 
@@ -64,7 +69,10 @@ All keys are optional. A key that is present replaces the default list. The `add
   "excludePrefixes": ["plan-"],
   "defaultRegister": "essay",
   "registers": { "letter": ["/letters/", "cover"], "post": ["/social/"] },
-  "promptPhrases": ["tidy this up"]
+  "promptPhrases": ["tidy this up"],
+  "explanationFile": "explanation.md",
+  "rejectedFile": "rejected.txt",
+  "profile": "profile.json"
 }
 ```
 
@@ -73,6 +81,10 @@ All keys are optional. A key that is present replaces the default list. The `add
 - `excludeNames` and `excludePrefixes` remove files by name. The defaults cover README, CHANGELOG, LICENSE, SKILL, GATES, CONTRIBUTING, CLAUDE and AGENTS files and anything starting with `plan-`.
 - `registers` maps a register name from the profile to path fragments. The first register whose fragment matches the path is used, and `defaultRegister` applies when none match.
 - `promptPhrases` adds phrases that make the prompt hook fire.
+- `explanationFile` and `rejectedFile` name the approved explanation and the file of rejected phrases, one per line. A relative path is read from the voice folder and an absolute path is used as it is. When a file exists, the hook passes it to the checker as `--explanation` or `--rejected`, so `ADDITION` and `REPEATED_PHRASE` run on every written text. A file that does not exist is not passed.
+- `profile` points at a `profile.json` in another location. A relative path is read from the folder of `hook.json`.
+
+When the checker returns REVIEW, the hook prints each review hit and each drift line (metric, observed value, target). Drift lines are reports for the author. They are not edit orders for a text cut from an approved explanation.
 
 ## Environment variables
 
@@ -81,7 +93,9 @@ All keys are optional. A key that is present replaces the default list. The `add
 | `WRITE_LIKE_ME_VOICE` | Voice name when `--voice` is not given. |
 | `WRITE_LIKE_ME_SKILL_DIR` | Skill folder, when the script is not run from inside it. |
 | `WRITE_LIKE_ME_CHECKER` | Path of a different `voice_check.py`. |
-| `WRITE_LIKE_ME_PROFILE` | Path of a different `profile.json`. |
+| `WRITE_LIKE_ME_PROFILE` | Path of a `profile.json` in any location. The hook reads `hook.json` from the same folder. |
+| `WRITE_LIKE_ME_EXPLANATION` | Path of the approved explanation. Wins over `explanationFile` in `hook.json`. |
+| `WRITE_LIKE_ME_REJECTED` | Path of the rejected phrases file. Wins over `rejectedFile` in `hook.json`. |
 | `WRITE_LIKE_ME_PYTHON` | Python executable. The default is `python`. |
 
 ## Testing the hooks

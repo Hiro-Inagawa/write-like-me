@@ -6,7 +6,7 @@ How to write the generated voice skill files from the approved rules, statistics
 
 ## Output structure
 
-The voice lives inside the skill folder, in `voices/<name>/`, the same place SKILL.md reads it from:
+The voice folder is `voices/<name>/` inside the folder this skill is installed in, the same place SKILL.md reads it from. Any other location works when the tools are pointed at its `profile.json`: `--profile` for the checker and the eval harness, and `WRITE_LIKE_ME_PROFILE` or a `profile` entry in `hook.json` for the hook. The hook reads `hook.json` from the folder of the profile it uses. Everything the build writes goes into this folder, including the standalone report, and nothing goes into the corpus folder.
 
 ```
 voices/<name>/
@@ -18,6 +18,7 @@ voices/<name>/
   goldens.jsonl             # Approved BAD/GOOD examples turned into scored test cases
   eval-baseline.json        # Saved eval score used as the regression gate
   hook.json                 # Optional path rules for the Claude Code hooks (references/10-hooks.md)
+  _STYLE-PROFILE-<date>.md  # Standalone stylometric report
 ```
 
 `templates/generated-SKILL.md` is for the case where the voice should become a separate skill of its own. Copy the voice folder into that skill and keep the file names above.
@@ -28,11 +29,11 @@ Use the templates in `templates/` as skeletons. Fill in the corpus-specific data
 
 ## profile.json
 
-Holds the machine-readable version of the approved rules, the `bans` word lists and the per-register `registers` policy, keyed to the rule ids documented in `references/00-universal-baseline.md`. It is what `scripts/voice_check.py` and `eval/voice_eval.py` load at run time, in place of the prose in `02-corrective.md`. Produced by `python scripts/voice_profile.py init --voice <name> --register <primary-register> --from-stylometry <register>.stylometry.json --output profile.json`, then hand-edited so the `bans` and `registers` sections match the rules approved in Stage 5. Validated by `python scripts/voice_profile.py validate profile.json` before it is used as a gate. When the corpus is under 20,000 words, the profile carries a `provisional` object that lists the rules waiting for the author's confirmation.
+Holds the machine-readable version of the approved rules, the `bans` word lists and the per-register `registers` policy, keyed to the rule ids documented in `references/00-universal-baseline.md`. It is what `scripts/voice_check.py` and `eval/voice_eval.py` load at run time, in place of the prose in `02-corrective.md`. Produced by `python scripts/voice_profile.py init --voice <name> --register <primary-register> --from-stylometry <register>.stylometry.json --output profile.json`, then hand-edited so the `bans` and `registers` sections match the rules approved in Stage 5. Validated by `python scripts/voice_profile.py validate profile.json` before it is used as a gate. When the corpus is under 20,000 words, the profile carries a `provisional` object that lists the rules waiting for the author's confirmation. The allowed per-register values are in `templates/profile.schema.json`. `semicolons`, `contractions` and `questions` take off, allowed, review or forbidden. `init` starts `contractions` and `questions` as off and prints a line that says so, so the author sets them to review or forbidden when the approved rules call for it.
 
 ## goldens.jsonl
 
-Holds one JSON object per line for every approved BAD and GOOD example from `02-corrective.md`, in the format documented in Part B.5 of the implementation plan. A BAD example becomes a golden with `expect` set to `block` or `review`, a GOOD example becomes a golden with `expect` set to `pass`. Written by hand against `templates/generated-goldens.jsonl` as a starting skeleton, then consumed by `python eval/voice_eval.py baseline` to produce the first saved score and by `python eval/voice_eval.py score` on every later run.
+Holds one JSON object per line for every approved BAD and GOOD example from `02-corrective.md`, in the format documented in `eval/README.md`. A BAD example becomes a golden with `expect` set to `block` or `review`, a GOOD example becomes a golden with `expect` set to `pass`. Written by hand against `templates/generated-goldens.jsonl` as a starting skeleton, then consumed by `python eval/voice_eval.py baseline` to produce the first saved score and by `python eval/voice_eval.py score` on every later run.
 
 ## eval-baseline.json
 

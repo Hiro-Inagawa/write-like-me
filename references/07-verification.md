@@ -12,7 +12,7 @@ Qualitative impressions of style are unreliable. The author may feel the generat
 
 ## Held-out samples
 
-During Stage 5 (rule review), identify 2 or 3 paragraphs from the primary register corpus that were not selected as exemplars. These are the held-out samples.
+During Stage 5 (rule review), set aside 2 or 3 paragraphs from the primary register corpus that were not selected as exemplars. These are the held-out samples. Write down which files they are and keep them out of the exemplars and out of every generation prompt.
 
 Each held-out sample should:
 - Be representative of the primary register, not an unusual section
@@ -31,10 +31,14 @@ Verification does not depend on any particular agent or command line tool. The p
 4. Score the files:
 
 ```
-python eval/voice_eval.py verify --profile voices/<name>/profile.json voices/<name>/verify/sample-1.md voices/<name>/verify/sample-2.md
+python eval/voice_eval.py verify --strict --profile voices/<name>/profile.json voices/<name>/verify/sample-1.md voices/<name>/verify/sample-2.md
 ```
 
-The command prints the verdict, the hits and the drift lines for each file. It ends with `VOICE_EVAL_OK` when no sample blocks. Add `--strict` to fail on review hits and drift lines as well.
+The command prints the verdict, the hits and the drift lines for each file. `--strict` is the default for the author's own rules, because a rule the author set to `review` or `forbidden` on purpose should fail the sample. It ends with `VOICE_EVAL_OK` when no sample fails. Without `--strict` only a block hit fails a sample. After the samples, run the goldens gate for the voice:
+
+```
+python eval/voice_eval.py score --goldens voices/<name>/goldens.jsonl --profile voices/<name>/profile.json --gate voices/<name>/eval-baseline.json
+```
 
 Example of a topic prompt: if the held-out sample is about stochastic individuality in AI, the test prompt might be "Write a paragraph about how small initial differences compound over time in complex systems."
 

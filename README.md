@@ -38,7 +38,7 @@ Create a folder and put your writing in it. Good sources:
 - Essays, articles, blog posts, papers
 - Notes, journals, or any other text in your own voice
 
-Aim for at least 20,000 words. 50,000 or more gives more reliable results.
+Reliable distributions need 20,000 words. Below 5,000 words the build stops. Between 5,000 and 20,000 words the build continues and every distribution rule is provisional. 50,000 words or more gives more reliable results.
 
 **Step 2. Run the skill.**
 
@@ -88,17 +88,19 @@ The severity of each rule is set per register in `profile.json`. `info` hits app
 
 ## HOOKS FOR CLAUDE CODE
 
-`scripts/writing-gate-hook.mjs` runs in two modes. The `prompt` mode adds the method to the context when a prompt asks for a text that a reader will see. The `post-write` mode runs the checker on every reader text that was just written and blocks on `VOICE_CHECK_BLOCK`. It needs Node and no packages. The exact `settings.json` entries and the `hook.json` options are in `references/10-hooks.md`. Run `node --test tests/*.test.mjs` to test the hook.
+`scripts/writing-gate-hook.mjs` runs in two modes. The `prompt` mode adds the method to the context when a prompt asks for a text that a reader will see. The `post-write` mode runs the checker on every reader text that was just written and blocks on `VOICE_CHECK_BLOCK`. It needs Node and no packages. When `hook.json` names `explanationFile` and `rejectedFile`, or the environment variables `WRITE_LIKE_ME_EXPLANATION` and `WRITE_LIKE_ME_REJECTED` are set, the hook passes both files to the checker, and a REVIEW verdict prints the drift lines next to the review hits. The voice folder is `voices/<name>/` inside the skill folder, and any other location works through `WRITE_LIKE_ME_PROFILE`. The exact `settings.json` entries and the `hook.json` options are in `references/10-hooks.md`. Run `node --test tests/*.test.mjs` to test the hook.
 
 ## PROVISIONAL RULES
 
-A count of 0 in a small corpus is weak evidence. When the corpus is under 20,000 words, the build still runs and every rule that rests on a distribution is written as provisional. `profile.json` lists them under `provisional`, `02-corrective.md` has a section for them, and drift lines that come from them are labelled. A zero semicolon count becomes `review` and no longer `forbidden`. A rule stops being provisional when the author confirms it against a new text and removes its name from the list. Run `python scripts/voice_profile.py preflight --corpus-words N` before the analysis to see this and the missing optional packages up front.
+A count of 0 in a small corpus is weak evidence. Reliable distributions need 20,000 words and the floor is 5,000 words, below which the build stops. Between 5,000 and 20,000 words the build still runs and every rule that rests on a distribution is written as provisional. `profile.json` lists them under `provisional`, `02-corrective.md` has a section for them, and drift lines that come from them are labelled. A zero semicolon count becomes `review` and no longer `forbidden`. A rule stops being provisional when the author confirms it against a new text and removes its name from the list. Run `python scripts/voice_profile.py preflight --corpus-words N` before the analysis to see this and the missing optional packages up front.
 
 ## VERIFYING A VOICE
 
 Stage 7 no longer needs any particular agent. Generate a paragraph per held-out topic with the agent you already use, save each to a file, and run:
 
-    python eval/voice_eval.py verify --profile voices/<name>/profile.json sample-1.md sample-2.md
+    python eval/voice_eval.py verify --strict --profile voices/<name>/profile.json sample-1.md sample-2.md
+
+`--strict` is the default for your own rules, because it fails a sample on a review hit as well as on a block hit. Before the voice is emitted, `python scripts/corpus_conflicts.py <corpus>` runs the universal baseline over your own writing and lists every rule that blocks, so that you decide each conflict.
 
 The hedge tolerance that this step applies is one value in the profile, `thresholds.hedge_tolerance`.
 
@@ -128,7 +130,7 @@ Two optional tiers add readability scores (Flesch-Kincaid, Gunning Fog) via `tex
 
 - [Claude Code](https://claude.ai/code)
 - Python 3.8+
-- A writing corpus of at least 20,000 words (50,000 or more recommended for reliable distributions)
+- A writing corpus of at least 20,000 words for reliable distributions (5,000 words is the floor below which the build stops, and 50,000 words or more gives more reliable results)
 
 The draft checker (`voice_check.py`) needs only Python 3.8+. It has no installs and no dependencies of its own.
 
@@ -197,7 +199,7 @@ voices/<your-name>/
   goldens.jsonl            # Golden examples for evaluating the checker against this voice
   eval-baseline.json       # Recorded metrics the checker is graded against on future changes
 
-_STYLE-PROFILE-<DATE>.md   # Human-readable stylometric report (place this wherever you like)
+  _STYLE-PROFILE-<DATE>.md # Human-readable stylometric report, written next to the profile
 ```
 
 The `claude-ai-skill.md` file is ready to use in Claude.ai immediately after the build completes. To add it:
@@ -267,7 +269,8 @@ write-like-me/
   scripts/
     stylometry.py                   # Feature extraction
     extract_author_turns.py         # Author-turn filter for conversation exports
-    generate_report_from_json.py    # Report generator from JSON profiles
+    generate_report_from_json.py    # Report generator from JSON profiles, writes into the voice folder
+    corpus_conflicts.py             # Lists where the author's own writing breaks the universal baseline
     voice_segment.py                # Markdown draft to prose segments, with line numbers
     voice_rules.py                  # Deterministic detectors, parameterized by profile
     voice_profile.py                # Load, validate, and initialize profile.json

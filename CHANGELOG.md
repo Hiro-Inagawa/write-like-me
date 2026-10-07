@@ -27,6 +27,19 @@ Walkthrough fixes
 - Templates and `references/06-skill-emission.md` use the real paths and describe `voices/<name>/`.
 - `python scripts/voice_profile.py preflight` prints missing packages and a small corpus before the analysis starts.
 
+Walkthrough fixes, second pass
+
+- `stylometry.py --output` creates the output folder. `--report` and `generate_report_from_json.py` write into the voice folder by default and never into the corpus folder. The analysis and the author-turn extraction skip `_STYLE-PROFILE-*.md` files and any `voices/` folder inside the corpus.
+- `stylometry.py` reports a contraction count and a rate per 100 words. `references/04-rule-mining.md` turns a zero count into the candidate rule "no contractions", provisional under 20,000 words.
+- The `contractions`, `questions` and `semicolons` policies behave the same way. `review` gives a review hit and `forbidden` gives a block hit, and `references/00-universal-baseline.md` states it. Questions under `forbidden` used to give review and now give block. `voice_profile.py init` tells the author that `contractions` and `questions` start as off.
+- New `scripts/corpus_conflicts.py` runs the universal baseline over the author's own corpus and lists every rule that blocks, for the author to decide before emission.
+- `eval/voice_eval.py verify --strict` is the documented default in Stage 7 for the author's own rules. Stage 5 sets aside the held-out samples, and Stage 7 gives the exact verify and goldens gate commands.
+- One corpus size statement everywhere. 20,000 words for reliable distributions, 5,000 words as the floor below which the build stops, and provisional rules between them.
+- SKILL.md states where voices live, how the register is chosen, and that drift lines on a text cut from an approved explanation are reported to the author and not fixed silently. A `.gitkeep` no longer counts as a voice.
+- The hook passes `--explanation` and `--rejected` when `hook.json` names `explanationFile` and `rejectedFile` or when `WRITE_LIKE_ME_EXPLANATION` and `WRITE_LIKE_ME_REJECTED` are set. A REVIEW with drift lines prints the drift lines. `WRITE_LIKE_ME_PROFILE` or a `profile` entry in `hook.json` moves the voice folder anywhere.
+- `references/10-hooks.md` no longer hardcodes the install path.
+- The Claude.ai export template lists tricolon as `info`. The dangling plan references are gone. Console notes are ASCII. "results may vary" and "your mileage may vary" are closing-caveat phrases.
+
 Hooks
 
 - `scripts/writing-gate-hook.mjs` adds a `prompt` mode and a `post-write` mode for Claude Code. The voice comes from `--voice` or `WRITE_LIKE_ME_VOICE`, and the path rules from `voices/<name>/hook.json`. Setup is in `references/10-hooks.md`.
