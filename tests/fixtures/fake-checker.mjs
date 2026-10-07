@@ -10,6 +10,8 @@ const value = (flag) => {
 };
 const register = value('--register');
 const profile = value('--profile') === 'none' ? 'none' : basename(value('--profile').replace(/\\/g, '/'));
+const base = (flag) => basename(value(flag).replace(/\\/g, '/'));
+const files = `explanation=${base('--explanation')} rejected=${base('--rejected')}`;
 const name = basename(file.replace(/\\/g, '/')).toLowerCase();
 
 function out(json, token) {
@@ -24,12 +26,18 @@ if (name.includes('crash')) {
   out({
     verdict: 'BLOCK',
     hits: [
-      { severity: 'block', rule: 'em-dash', excerpt: `a dash here (register=${register} profile=${profile})` },
+      { severity: 'block', rule: 'em-dash', excerpt: `a dash here (register=${register} profile=${profile} ${files})` },
       { severity: 'block', rule: 'tricolon', line: 'fast, clear, and good' },
       { severity: 'review', rule: 'hedge', excerpt: 'maybe' },
     ],
   }, 'VOICE_CHECK_BLOCK');
   process.exitCode = 1;
+} else if (name.includes('drift')) {
+  out({
+    verdict: 'REVIEW',
+    hits: [{ severity: 'info', rule: 'tricolon', excerpt: 'a, b, and c' }],
+    drift: [{ metric: 'mean_sentence_words', observed: 22.1, target: [10, 16], severity: 'review' }],
+  }, 'VOICE_CHECK_REVIEW');
 } else if (name.includes('review')) {
   out({
     verdict: 'REVIEW',

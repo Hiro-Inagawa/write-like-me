@@ -170,7 +170,14 @@ class ProfileRuleTests(unittest.TestCase):
         reg = forbidding(questions="forbidden")
         hits = hits_for("Why does this matter? Because it compounds.", register=reg)
         self.assertEqual(hits[0].rule, "RHETORICAL_QUESTION")
-        self.assertEqual(hits[0].severity, "review")
+        self.assertEqual(hits[0].severity, "block")
+
+    def test_questions_and_contractions_review_policy_gives_review(self):
+        hits = hits_for("Why does this matter? Because it compounds.", register=forbidding(questions="review"))
+        self.assertEqual([(h.rule, h.severity) for h in hits], [("RHETORICAL_QUESTION", "review")])
+        hits = hits_for("It's done.", register=forbidding(contractions="review"))
+        self.assertEqual([(h.rule, h.severity) for h in hits], [("CONTRACTION", "review")])
+        self.assertEqual(rule_ids("Why does this matter to us? It is what we do and it isn't going away.", register=forbidding(questions="allowed", contractions="allowed")), [])
 
     def test_exclamations_by_register(self):
         self.assertEqual(rule_ids("We shipped it on Friday!"), [])

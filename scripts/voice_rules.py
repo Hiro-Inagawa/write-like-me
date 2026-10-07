@@ -322,23 +322,27 @@ def rule_protest_framing(segs, profile, reg):
 
 
 def rule_contractions(segs, profile, reg):
-    if reg.get("contractions") != "forbidden":
+    policy = reg.get("contractions")
+    if policy not in ("forbidden", "review"):
         return []
+    severity = BLOCK if policy == "forbidden" else REVIEW
     hits = []
     for seg in segs:
         if seg.kind not in PROSE_KINDS:
             continue
         for m in CONTRACTION.finditer(seg.text):
-            hits.append(Hit("CONTRACTION", BLOCK, seg.line, _excerpt(seg.text, m.start()),
+            hits.append(Hit("CONTRACTION", severity, seg.line, _excerpt(seg.text, m.start()),
                             "Contraction '%s'. Write it out." % m.group(0)))
     return hits
 
 
 def rule_questions(segs, profile, reg):
-    if reg.get("questions") != "forbidden":
+    policy = reg.get("questions")
+    if policy not in ("forbidden", "review"):
         return []
+    severity = BLOCK if policy == "forbidden" else REVIEW
     pred = lambda s: s.rstrip().endswith("?")
-    return _sentence_hits(segs, pred, "RHETORICAL_QUESTION", REVIEW, "Question in prose. Resolve the tension instead of staging it.", kinds=("prose",))
+    return _sentence_hits(segs, pred, "RHETORICAL_QUESTION", severity, "Question in prose. Resolve the tension instead of staging it.", kinds=("prose",))
 
 
 def rule_exclamation(segs, profile, reg):

@@ -6,15 +6,16 @@
 //
 // Reads the hook JSON from stdin, prints at most one JSON line, always exits 0.
 // The voice comes from --voice or WRITE_LIKE_ME_VOICE. With neither, a single voice in voices/ is used,
-// and with none the checker runs the universal baseline. The profile is voices/<voice>/profile.json and
-// the path rules are in voices/<voice>/hook.json. Node standard library only.
+// and with none the checker runs the universal baseline. The voice folder is voices/<voice>/ inside the
+// skill folder, or the folder of the file named by WRITE_LIKE_ME_PROFILE. It holds profile.json and the
+// optional hook.json with the path rules. Node standard library only.
 //
-// Environment overrides, mainly for tests: WRITE_LIKE_ME_VOICE, WRITE_LIKE_ME_SKILL_DIR,
-// WRITE_LIKE_ME_CHECKER, WRITE_LIKE_ME_PROFILE, WRITE_LIKE_ME_PYTHON.
+// Environment overrides: WRITE_LIKE_ME_VOICE, WRITE_LIKE_ME_SKILL_DIR, WRITE_LIKE_ME_CHECKER,
+// WRITE_LIKE_ME_PROFILE, WRITE_LIKE_ME_PYTHON, WRITE_LIKE_ME_EXPLANATION, WRITE_LIKE_ME_REJECTED.
 
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
-import { basename, dirname, extname, join, resolve } from 'node:path';
+import { basename, dirname, extname, isAbsolute, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -103,12 +104,26 @@ export function resolveVoice(argv, dir = skillDir()) {
   }
 }
 
+// The folder that holds profile.json and hook.json for the voice.
+export function voiceDir(voice, dir = skillDir()) {
+  const profile = process.env.WRITE_LIKE_ME_PROFILE;
+  if (profile) return dirname(resolve(profile));
+  return voice ? join(dir, 'voices', voice) : null;
+}
+
+function inVoiceDir(file, folder) {
+  if (typeof file !== 'string' || !file) return null;
+  return isAbsolute(file) || !folder ? file : resolve(folder, file);
+}
+
 export function loadConfig(voice, dir = skillDir()) {
   const config = { ...DEFAULT_CONFIG };
-  if (!voice) return config;
+  const folder = voiceDir(voice, dir);
+  if (!folder) return config;
+  config.voiceDir = folder;
   let user = null;
   try {
-    user = JSON.parse(readFileSync(join(dir, 'voices', voice, 'hook.json'), 'utf8'));
+    user = JSON.parse(readFileSync(join(folder, 'hook.json'), 'utf8'));
   } catch {
     return config;
   }
@@ -121,6 +136,9 @@ export function loadConfig(voice, dir = skillDir()) {
   if (Array.isArray(user.addExclude)) config.exclude = [...config.exclude, ...user.addExclude.map(String)];
   if (typeof user.defaultRegister === 'string') config.defaultRegister = user.defaultRegister;
   if (user.registers && typeof user.registers === 'object') config.registers = user.registers;
+  for (const key of ['explanationFile', 'rejectedFile', 'profile']) {
+    if (typeof user[key] === 'string' && user[key]) config[key] = inVoiceDir(user[key], folder);
+  }
   return config;
 }
 
@@ -171,16 +189,32 @@ function parseCheckerOutput(stdout) {
     : null;
   const verdict = ['PASS', 'REVIEW', 'BLOCK'].includes(fromJson) ? fromJson : token;
   if (!verdict) return null;
-  return { verdict, hits: Array.isArray(json?.hits) ? json.hits : [] };
+  return { verdict, hits: Array.isArray(json?.hits) ? json.hits : [], drift: Array.isArray(json?.drift) ? json.drift : [] };
 }
 
-function runChecker(filePath, register, voice, dir) {
+// The explanation and rejected-phrase files: the environment wins, then hook.json. Only existing files are passed.
+export function contextFiles(config = DEFAULT_CONFIG) {
+  const pick = (envName, key) => {
+    const file = process.env[envName] || config[key] || null;
+    return file && existsSync(file) ? file : null;
+  };
+  return {
+    explanation: pick('WRITE_LIKE_ME_EXPLANATION', 'explanationFile'),
+    rejected: pick('WRITE_LIKE_ME_REJECTED', 'rejectedFile'),
+  };
+}
+
+function runChecker(filePath, register, voice, dir, config = DEFAULT_CONFIG) {
   const python = process.env.WRITE_LIKE_ME_PYTHON || 'python';
   const checker = process.env.WRITE_LIKE_ME_CHECKER || join(dir, 'scripts', 'voice_check.py');
-  const profile = process.env.WRITE_LIKE_ME_PROFILE || (voice ? join(dir, 'voices', voice, 'profile.json') : null);
+  const profile = process.env.WRITE_LIKE_ME_PROFILE || config.profile
+    || (voice ? join(dir, 'voices', voice, 'profile.json') : null);
   const args = [checker, filePath, '--json'];
   if (profile && existsSync(profile)) args.push('--profile', profile);
   if (register) args.push('--register', register);
+  const context = contextFiles(config);
+  if (context.explanation) args.push('--explanation', context.explanation);
+  if (context.rejected) args.push('--rejected', context.rejected);
   const res = spawnSync(python, args, { encoding: 'utf8', timeout: CHECK_TIMEOUT_MS, windowsHide: true });
   if (res.error) {
     const reason = res.error.code === 'ETIMEDOUT' ? 'timeout after 20 seconds' : res.error.message;
@@ -207,10 +241,20 @@ function selectHits(hits, severity) {
   return matching.length ? matching : hits;
 }
 
-function hitSummary(hits, severity) {
-  const chosen = selectHits(hits, severity);
-  const list = chosen.slice(0, MAX_HITS).map(describeHit).filter(Boolean).join(' | ');
-  return { list, count: chosen.length };
+function describeDrift(d) {
+  if (!d || typeof d !== 'object') return '';
+  const target = Array.isArray(d.target) ? `${d.target[0]} to ${d.target[1]}` : String(d.target);
+  return `drift ${d.metric ?? 'metric'}: observed ${d.observed}, target ${target}${d.provisional ? ' (provisional)' : ''}`;
+}
+
+function hitSummary(hits, severity, drift = []) {
+  const chosen = severity === 'review' && drift.length
+    ? hits.filter((h) => h && h.severity === 'review')
+    : selectHits(hits, severity);
+  const parts = chosen.slice(0, MAX_HITS).map(describeHit).filter(Boolean);
+  if (severity === 'review') parts.push(...drift.slice(0, MAX_HITS).map(describeDrift).filter(Boolean));
+  const realHits = chosen.filter((h) => h && h.severity === severity).length;
+  return { list: parts.join(' | '), count: severity === 'review' ? realHits + drift.length : chosen.length };
 }
 
 function postWriteOutput(filePath, result) {
@@ -232,7 +276,7 @@ function postWriteOutput(filePath, result) {
     };
   }
   if (result.verdict === 'REVIEW') {
-    const { list, count } = hitSummary(result.hits, 'review');
+    const { list, count } = hitSummary(result.hits, 'review', result.drift || []);
     return {
       hookSpecificOutput: {
         hookEventName: 'PostToolUse',
@@ -253,7 +297,7 @@ function runPostWrite(argv) {
   const voice = resolveVoice(argv, dir);
   const config = loadConfig(voice, dir);
   if (!isReaderText(filePath, config)) return;
-  emit(postWriteOutput(filePath, runChecker(filePath, chooseRegister(filePath, config), voice, dir)));
+  emit(postWriteOutput(filePath, runChecker(filePath, chooseRegister(filePath, config), voice, dir, config)));
 }
 
 // ---------- prompt mode ----------

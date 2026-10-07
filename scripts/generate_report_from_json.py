@@ -3,7 +3,10 @@
 Generate a combined stylometric report from pre-computed JSON profile files.
 
 Usage:
-    python generate_report_from_json.py profile1.json [profile2.json ...] --output report.md
+    python generate_report_from_json.py profile1.json [profile2.json ...] [--output report.md] [--author NAME]
+
+Without --output the report is written into the folder of the first profile JSON (the voice folder)
+as _STYLE-PROFILE-<date>.md. It is never written into the corpus folder by default.
 """
 
 import argparse
@@ -69,6 +72,18 @@ def format_report(profile: dict, source_label: str = "") -> list[str]:
             f"| Question mark per 1000w | {punc.get('question_per_1000w', '—')} |",
             f"| Exclamation per 1000w | {punc.get('exclamation_per_1000w', '—')} |",
             f"| Ellipsis per 1000w | {punc.get('ellipsis_per_1000w', '—')} |",
+            f"",
+        ]
+
+    contr = profile.get("contractions", {})
+    if contr:
+        lines += [
+            f"### Contractions",
+            f"",
+            f"| Metric | Value |",
+            f"|--------|-------|",
+            f"| Count | {contr.get('count', '—')} |",
+            f"| Per 100 words | {contr.get('per_100w', '—')} |",
             f"",
         ]
 
@@ -223,10 +238,18 @@ def cross_register_table(profiles: list[tuple[str, dict]]) -> list[str]:
     return lines
 
 
+def default_output(first_spec: str) -> Path:
+    """The voice folder is the folder of the first profile JSON. A label prefix is not part of the path."""
+    path = Path(first_spec)
+    if not path.exists() and first_spec.find(":") > 1:
+        path = Path(first_spec[first_spec.find(":") + 1:])
+    return path.resolve().parent / f"_STYLE-PROFILE-{date.today().isoformat()}.md"
+
+
 def main():
     parser = argparse.ArgumentParser(description="Generate combined stylometric report from JSON profiles.")
     parser.add_argument("profiles", nargs="+", help="JSON profile files (label:path or just path)")
-    parser.add_argument("--output", required=True, help="Output markdown file path")
+    parser.add_argument("--output", help="Output markdown file path (default: the voice folder, next to the first profile JSON)")
     parser.add_argument("--author", default="", help="Author name for the report title")
     args = parser.parse_args()
 
@@ -286,7 +309,7 @@ def main():
         "",
     ]
 
-    output = Path(args.output)
+    output = Path(args.output) if args.output else default_output(args.profiles[0])
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text("\n".join(out_lines), encoding="utf-8")
     print(f"Report written to: {output}", file=sys.stderr)

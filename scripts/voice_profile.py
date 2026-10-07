@@ -21,6 +21,10 @@ TRISTATE = ("off", "review", "block")
 LEVELS = ("off", "info", "review", "block")
 POLICY = ("off", "allowed", "review", "forbidden")
 MIN_CORPUS_WORDS = 20000
+FLOOR_CORPUS_WORDS = 5000
+POLICY_NOTE = ("NOTE: contractions and questions start as off in register '%s'. To enforce them, set "
+               "registers.<name>.contractions or registers.<name>.questions to review or forbidden in profile.json, "
+               "then run voice_profile.py validate. Allowed values: off, allowed, review, forbidden.")
 
 DEFAULT_REGISTER = {
     "semicolons": "off",
@@ -63,7 +67,8 @@ DEFAULT_PROFILE = {
         "evaluative_review": ["powerful", "robust", "significant", "important", "novel", "unique",
                                "compelling", "elegant", "fascinating", "remarkable", "exceptional"],
         "caveat_phrases": ["one thing to note", "that said", "worth knowing", "keep in mind", "to be fair",
-                            "one caveat", "a small caveat", "note that", "just so you"],
+                            "one caveat", "a small caveat", "note that", "just so you",
+                            "results may vary", "your mileage may vary"],
         "extra_phrases": [],
     },
     "registers": {},
@@ -216,7 +221,10 @@ def preflight(corpus_words=None) -> list:
         except ImportError:
             lines.append("optional package %s is not installed, so %s will be skipped. pip install %s"
                          % (module, extra, module))
-    if corpus_words is not None and corpus_words < MIN_CORPUS_WORDS:
+    if corpus_words is not None and corpus_words < FLOOR_CORPUS_WORDS:
+        lines.append("corpus has %d words, below the floor of %d. The build stops here. Collect more writing "
+                     "before analysis." % (corpus_words, FLOOR_CORPUS_WORDS))
+    elif corpus_words is not None and corpus_words < MIN_CORPUS_WORDS:
         lines.append("corpus has %d words, below %d. Every distribution-based rule will be emitted as provisional."
                      % (corpus_words, MIN_CORPUS_WORDS))
     return lines
@@ -265,6 +273,7 @@ def main(argv=None) -> int:
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(profile, indent=2) + "\n", encoding="utf-8")
     print("wrote %s" % out)
+    print(POLICY_NOTE % args.register)
     print("VOICE_PROFILE_VALID")
     return 0
 

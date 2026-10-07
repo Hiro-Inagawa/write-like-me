@@ -138,6 +138,17 @@ def extract_turns_from_file(
     return combined, stats
 
 
+def is_generated_artifact(path: Path, root: Path) -> bool:
+    """True for files this skill wrote: _STYLE-PROFILE-*.md reports and anything under a voices/ folder."""
+    if re.match(r"^_STYLE-PROFILE-.*\.md$", path.name, re.IGNORECASE):
+        return True
+    try:
+        parts = path.relative_to(root).parts[:-1]
+    except ValueError:
+        parts = path.parts[:-1]
+    return any(part.lower() == "voices" for part in parts)
+
+
 def load_corpus_markdown(
     input_dir: Path,
     author_marker: str = "## You",
@@ -146,7 +157,7 @@ def load_corpus_markdown(
     warn_threshold: float = 0.05,
 ) -> tuple:
     """Process all markdown files in a directory."""
-    md_files = sorted(input_dir.rglob("*.md"))
+    md_files = [f for f in sorted(input_dir.rglob("*.md")) if not is_generated_artifact(f, input_dir)]
 
     all_turns = []
     per_file_stats = []
@@ -288,7 +299,7 @@ def show_preview(all_text: str, n: int = 5) -> None:
 
     sample = random.sample(paragraphs, min(n, len(paragraphs)))
     print(f"\n{'='*60}")
-    print(f"EXTRACTED AUTHOR CONTENT — {n} RANDOM SAMPLES")
+    print(f"EXTRACTED AUTHOR CONTENT: {n} RANDOM SAMPLES")
     print(f"{'='*60}")
     for i, para in enumerate(sample, 1):
         print(f"\n[Sample {i}]\n{para[:500]}{'...' if len(para) > 500 else ''}")

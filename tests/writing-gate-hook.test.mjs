@@ -254,3 +254,73 @@ test('a broken hook.json falls back to the defaults', () => {
   const r = write('D:\\work\\writing\\essay-block.md', 'Write', { ...FAKE_ENV, WRITE_LIKE_ME_SKILL_DIR: dir });
   assert.equal(json(r).decision, 'block');
 });
+
+
+// ----- explanation and rejected files -----
+
+const CTX = mkdtempSync(join(tmpdir(), 'wlm-ctx-'));
+writeFileSync(join(CTX, 'expl.md'), 'The approved explanation.');
+writeFileSync(join(CTX, 'rej.txt'), 'rejected phrase');
+const ESSAY_BLOCK = 'D:\\work\\writing\\essay-block.md';
+
+function skillWithHookJson(hookJson, files = {}) {
+  const dir = mkdtempSync(join(tmpdir(), 'wlm-ctxskill-'));
+  mkdirSync(join(dir, 'voices', 'demo'), { recursive: true });
+  writeFileSync(join(dir, 'voices', 'demo', 'profile.json'), '{}');
+  writeFileSync(join(dir, 'voices', 'demo', 'hook.json'), JSON.stringify({ defaultRegister: 'essay', ...hookJson }));
+  for (const [name, text] of Object.entries(files)) writeFileSync(join(dir, 'voices', 'demo', name), text);
+  return dir;
+}
+
+test('hook.json explanationFile and rejectedFile are passed as paths relative to the voice folder', () => {
+  const dir = skillWithHookJson(
+    { explanationFile: 'explanation.md', rejectedFile: 'rejected.txt' },
+    { 'explanation.md': 'x', 'rejected.txt': 'y' });
+  const r = write(ESSAY_BLOCK, 'Write', { ...FAKE_ENV, WRITE_LIKE_ME_SKILL_DIR: dir });
+  assert.match(json(r).reason, /explanation=explanation\.md rejected=rejected\.txt/);
+});
+
+test('hook.json accepts absolute paths for both files', () => {
+  const dir = skillWithHookJson({ explanationFile: join(CTX, 'expl.md'), rejectedFile: join(CTX, 'rej.txt') });
+  const r = write(ESSAY_BLOCK, 'Write', { ...FAKE_ENV, WRITE_LIKE_ME_SKILL_DIR: dir });
+  assert.match(json(r).reason, /explanation=expl\.md rejected=rej\.txt/);
+});
+
+test('environment variables give the files and win over hook.json', () => {
+  const dir = skillWithHookJson(
+    { explanationFile: 'explanation.md', rejectedFile: 'rejected.txt' },
+    { 'explanation.md': 'x', 'rejected.txt': 'y' });
+  const r = write(ESSAY_BLOCK, 'Write', {
+    ...FAKE_ENV, WRITE_LIKE_ME_SKILL_DIR: dir,
+    WRITE_LIKE_ME_EXPLANATION: join(CTX, 'expl.md'), WRITE_LIKE_ME_REJECTED: join(CTX, 'rej.txt'),
+  });
+  assert.match(json(r).reason, /explanation=expl\.md rejected=rej\.txt/);
+});
+
+test('files that do not exist are not passed', () => {
+  const dir = skillWithHookJson({ explanationFile: 'missing.md', rejectedFile: 'missing.txt' });
+  const r = write(ESSAY_BLOCK, 'Write', { ...FAKE_ENV, WRITE_LIKE_ME_SKILL_DIR: dir });
+  assert.match(json(r).reason, /explanation=none rejected=none/);
+});
+
+test('without any configuration neither flag is passed', () => {
+  assert.match(json(write(ESSAY_BLOCK)).reason, /explanation=none rejected=none/);
+});
+
+test('a REVIEW with drift lines prints the drift lines and counts them', () => {
+  const o = json(write('D:\\work\\writing\\essay-drift.md'));
+  const text = o.hookSpecificOutput.additionalContext;
+  assert.match(text, /drift mean_sentence_words: observed 22\.1, target 10 to 16/);
+  assert.doesNotMatch(text, /tricolon/);
+  assert.equal(o.systemMessage, 'write-like-me: REVIEW on essay-drift.md (1 review hits)');
+});
+
+test('WRITE_LIKE_ME_PROFILE puts the voice folder, and its hook.json, anywhere', () => {
+  const elsewhere = mkdtempSync(join(tmpdir(), 'wlm-else-'));
+  writeFileSync(join(elsewhere, 'profile.json'), '{}');
+  writeFileSync(join(elsewhere, 'hook.json'), JSON.stringify({ defaultRegister: 'memo', explanationFile: 'e.md' }));
+  writeFileSync(join(elsewhere, 'e.md'), 'x');
+  const r = write(ESSAY_BLOCK, 'Write', { ...FAKE_ENV, WRITE_LIKE_ME_PROFILE: join(elsewhere, 'profile.json') });
+  assert.match(json(r).reason, /register=memo/);
+  assert.match(json(r).reason, /explanation=e\.md/);
+});

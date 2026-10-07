@@ -10,7 +10,8 @@ Usage:
 Options:
     --register NAME      Tag this corpus with a register name (default: "default")
     --output PATH        Write JSON profile to this path (default: prints to stdout)
-    --report PATH        Write a markdown report to this path
+    --report [PATH]      Write a markdown report. Without a path the report is written next to --output
+                         as _STYLE-PROFILE-<date>.md. It never goes into the corpus folder by default.
     --no-textstat        Skip textstat features even if the package is installed
     --no-spacy           Skip spaCy features even if the package is installed
     --min-words N        Warn if filtered corpus has fewer than N words (default: 20000)
@@ -342,6 +343,21 @@ def compute_pronoun_rates(words: list) -> dict:
     }
 
 
+CONTRACTION_RE = re.compile(
+    r"\b(?:[A-Za-z]+n't|I'm|I've|I'll|I'd|you're|you've|you'll|you'd|we're|we've|we'll|we'd|"
+    r"they're|they've|they'll|they'd|he's|she's|it's|that's|there's|here's|what's|who's|let's|"
+    r"it'll|that'll|there'll)\b", re.IGNORECASE)
+
+
+def compute_contraction_stats(text: str, word_count: int) -> dict:
+    """Count contractions from a closed list. Curly apostrophes count as straight ones."""
+    count = len(CONTRACTION_RE.findall(text.replace("\u2019", "'")))
+    return {
+        "count": count,
+        "per_100w": round(count / max(word_count, 1) * 100, 3),
+    }
+
+
 def compute_concession_rate(sentences: list) -> float:
     """Fraction of sentences containing a concession word."""
     if not sentences:
@@ -391,7 +407,7 @@ def compute_spacy_features(text: str) -> dict:
     try:
         nlp = _spacy.load("en_core_web_sm")
     except OSError:
-        return {"error": "spaCy model not found — run: python -m spacy download en_core_web_sm"}
+        return {"error": "spaCy model not found. Run: python -m spacy download en_core_web_sm"}
 
     chunk = text[:50000]  # spaCy has memory limits; sample if huge
     doc = nlp(chunk)
@@ -481,6 +497,7 @@ def compute_features(text: str, register: str = "default",
         "punctuation": compute_punctuation_rates(prose, word_count),
         "hedging_booster": compute_hedging_booster(words, prose),
         "pronouns": compute_pronoun_rates(words),
+        "contractions": compute_contraction_stats(prose, word_count),
         "structural": structural,
     }
 
@@ -559,6 +576,18 @@ def generate_report(profile: dict, source_label: str = "") -> str:
             f"| Question mark | {punc.get('question_per_1000w', '—')} |",
             f"| Exclamation | {punc.get('exclamation_per_1000w', '—')} |",
             f"| Ellipsis | {punc.get('ellipsis_per_1000w', '—')} |",
+            f"",
+        ]
+
+    contr = profile.get("contractions", {})
+    if contr:
+        lines += [
+            f"### Contractions",
+            f"",
+            f"| Metric | Value |",
+            f"|--------|-------|",
+            f"| Count | {contr.get('count', '—')} |",
+            f"| Per 100 words | {contr.get('per_100w', '—')} |",
             f"",
         ]
 
@@ -699,6 +728,23 @@ def load_file(path: Path) -> str:
         return ""
 
 
+FLOOR_WORDS = 5000
+GENERATED_REPORT = re.compile(r"^_STYLE-PROFILE-.*\.md$", re.IGNORECASE)
+GENERATED_DIRS = ("voices",)
+
+
+def is_generated_artifact(path: Path, root: Path) -> bool:
+    """True for files this skill wrote: _STYLE-PROFILE-*.md reports and anything under a voices/ folder.
+    Only the parts below the corpus root count, so a corpus that itself lives in a folder named voices is kept."""
+    if GENERATED_REPORT.match(path.name):
+        return True
+    try:
+        parts = path.relative_to(root).parts[:-1]
+    except ValueError:
+        parts = path.parts[:-1]
+    return any(part.lower() in GENERATED_DIRS for part in parts)
+
+
 def load_corpus(input_path: Path) -> tuple:
     """Returns (combined_text, {register: text} per register)."""
     if input_path.is_file():
@@ -707,6 +753,11 @@ def load_corpus(input_path: Path) -> tuple:
     elif input_path.is_dir():
         files = sorted(input_path.rglob("*.md")) + sorted(input_path.rglob("*.txt"))
         combined = []
+        skipped = [f for f in files if is_generated_artifact(f, input_path)]
+        files = [f for f in files if f not in skipped]
+        if skipped:
+            print(f"Note: skipped {len(skipped)} generated file(s) (_STYLE-PROFILE-*.md or voices/) inside the corpus.",
+                  file=sys.stderr)
         for f in files:
             text = load_file(f)
             if text.strip():
@@ -719,6 +770,23 @@ def load_corpus(input_path: Path) -> tuple:
 
 # --- CLI ---
 
+def resolve_report_path(report_arg, output_arg):
+    """An explicit path is used as given. A bare --report goes next to --output. None when neither exists."""
+    if report_arg and report_arg != "auto":
+        return Path(report_arg)
+    if output_arg:
+        return Path(output_arg).parent / f"_STYLE-PROFILE-{date.today().isoformat()}.md"
+    return None
+
+
+def _is_inside(path: Path, folder: Path) -> bool:
+    try:
+        path.resolve().relative_to(folder.resolve())
+        return True
+    except ValueError:
+        return False
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Stylometric feature extraction for writing corpus analysis.",
@@ -728,7 +796,9 @@ def main():
     parser.add_argument("input", help="File or directory to analyze")
     parser.add_argument("--register", default="default", help="Register label for this corpus")
     parser.add_argument("--output", help="Write JSON profile to this path")
-    parser.add_argument("--report", help="Write markdown report to this path")
+    parser.add_argument("--report", nargs="?", const="auto",
+                        help="Write a markdown report. Without a path, writes next to --output as "
+                             "_STYLE-PROFILE-<date>.md")
     parser.add_argument("--no-textstat", action="store_true")
     parser.add_argument("--no-spacy", action="store_true")
     parser.add_argument("--min-words", type=int, default=20000)
@@ -749,9 +819,9 @@ def main():
     if HAS_SPACY and not use_spacy:
         print("Note: spaCy is installed but --no-spacy was set.", file=sys.stderr)
     if not HAS_TEXTSTAT:
-        print("Note: textstat not installed — readability features disabled. pip install textstat", file=sys.stderr)
+        print("Note: textstat not installed, so readability features are disabled. pip install textstat", file=sys.stderr)
     if not HAS_SPACY:
-        print("Note: spaCy not installed — deep syntactic features disabled. pip install spacy", file=sys.stderr)
+        print("Note: spaCy not installed, so deep syntactic features are disabled. pip install spacy", file=sys.stderr)
 
     profile = compute_features(
         combined_text,
@@ -761,24 +831,39 @@ def main():
     )
 
     word_count = profile["corpus_stats"]["word_count"]
-    if word_count < args.min_words:
+    if word_count < FLOOR_WORDS:
+        print(f"Warning: corpus has {word_count:,} words after filtering, below the floor of {FLOOR_WORDS:,}. "
+              "The build stops here. Collect more writing.", file=sys.stderr)
+    elif word_count < args.min_words:
         print(f"Warning: corpus has {word_count:,} words after filtering "
-              f"(minimum recommended: {args.min_words:,}). "
-              "Distributional features may be unreliable.", file=sys.stderr)
+              f"(reliable distributions need {args.min_words:,}). "
+              "Every distribution rule is provisional.", file=sys.stderr)
 
     # Output JSON
     json_str = json.dumps(profile, indent=2, ensure_ascii=False)
     if args.output:
-        Path(args.output).write_text(json_str, encoding="utf-8")
+        out_path = Path(args.output)
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_path.write_text(json_str, encoding="utf-8")
         print(f"JSON profile written to {args.output}", file=sys.stderr)
     else:
         print(json_str)
 
     # Output report
     if args.report:
+        report_path = resolve_report_path(args.report, args.output)
+        if report_path is None:
+            print("Error: --report without a path needs --output, so the report can go next to the profile.",
+                  file=sys.stderr)
+            sys.exit(2)
+        if input_path.is_dir() and _is_inside(report_path, input_path):
+            print(f"Warning: the report is inside the corpus folder {input_path}. "
+                  "Later runs skip _STYLE-PROFILE-*.md files, but keep reports in the voice folder.",
+                  file=sys.stderr)
         report_text = generate_report(profile, source_label=str(input_path))
-        Path(args.report).write_text(report_text, encoding="utf-8")
-        print(f"Markdown report written to {args.report}", file=sys.stderr)
+        report_path.parent.mkdir(parents=True, exist_ok=True)
+        report_path.write_text(report_text, encoding="utf-8")
+        print(f"Markdown report written to {report_path}", file=sys.stderr)
 
 
 if __name__ == "__main__":
