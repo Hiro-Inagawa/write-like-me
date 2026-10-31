@@ -157,6 +157,17 @@ class ProfileRuleTests(unittest.TestCase):
         self.assertIn("COMPRESSED_ANTITHESIS", rule_ids("Accuracy comes from structure, not prompting."))
         self.assertIn("COMPRESSED_ANTITHESIS", rule_ids("Engineered for citation rather than clicks."))
 
+    def test_compressed_antithesis_instead_of(self):
+        self.assertIn("COMPRESSED_ANTITHESIS", rule_ids("Made for walkers instead of drivers."))
+        long_tag = ("For this I gave the assistant every action the board has instead of a few, "
+                    "so it can also create, sort, schedule and restore tasks the way the person does.")
+        self.assertIn("COMPRESSED_ANTITHESIS", rule_ids(long_tag))
+        full = "Most owners chose the small model instead of the large one because a flat has little space."
+        self.assertNotIn("COMPRESSED_ANTITHESIS", rule_ids(full))
+        long_half = ("The assistant suggests starting on one small piece instead of waiting until it feels easier, "
+                     "and it writes that piece as the first subtask on the board.")
+        self.assertNotIn("COMPRESSED_ANTITHESIS", rule_ids(long_half))
+
     def test_protest_framing(self):
         self.assertIn("PROTEST_FRAMING", rule_ids("None of this is invented from scratch."))
 

@@ -2,6 +2,11 @@
 
 All notable changes to Write Like Me. Versions are git tags and GitHub Releases.
 
+## 3.0.1 (2026-10-30)
+
+- `COMPRESSED_ANTITHESIS` now covers "instead of". In a line under 12 words, a heading or a label it flags any "instead of" tail. In longer prose it flags an "instead of X" that ends at punctuation when the negated half has four words or fewer, so "every action the board has instead of a few, so" is flagged and "the small model instead of the large one because" passes.
+- Universal goldens `u-antith-002` and `u-antith-003` and a unit test cover both cases. The universal baseline is refreshed.
+
 ## 3.0.0 (2026-10-06)
 
 Method layer

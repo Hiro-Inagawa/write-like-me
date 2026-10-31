@@ -1,6 +1,6 @@
 ---
 name: write-like-me
-version: 3.0.0
+version: 3.0.1
 description: Use when writing or revising prose for a reader (emails, cover letters, form-field answers, profile texts, portfolio pages, listing and README prose), when asked about such a text, or when building a new writing voice from a corpus. On invoke: checks the voices/ folder. If voices exist, routes to writing mode, which follows a two-message method (explain first, then write the text). If none exist, starts the 7-stage voice-building workflow. Supports multiple named voices. Includes a deterministic draft checker (scripts/voice_check.py), an eval harness, and Claude Code hooks.
 ---
 

@@ -40,7 +40,8 @@ CONTRACTION = re.compile(
 TRICOLON = re.compile(r"\b(\w+(?: \w+){0,3}), (\w+(?: \w+){0,3}), (?:and|or) (\w+(?: \w+){0,3})\b")
 TRICOLON_ASYNDETIC = re.compile(r"\b(\w+(?: \w+){1,4}), (\w+(?: \w+){1,4}), (\w+(?: \w+){1,4})[.!?]\s*$")
 ANTITHESIS_TAIL = re.compile(r",\s+not\s+([^,.;:!?]+?)\s*[.!?]?\s*$", re.IGNORECASE)
-ANTITHESIS_SHORT = re.compile(r",\s*not\s+\S|\brather than\b", re.IGNORECASE)
+ANTITHESIS_SHORT = re.compile(r",\s*not\s+\S|\brather than\b|\binstead of\b", re.IGNORECASE)
+ANTITHESIS_INSTEAD = re.compile(r"\binstead of\s+([^,.;:!?]+?)\s*[,.;:!?]", re.IGNORECASE)
 ANTITHESIS_NEGATED_MAX_WORDS = 4
 SHORT_LINE_WORDS = 12
 BUILDUP_STORY = re.compile(r"\btells? an? \w+ story\b", re.IGNORECASE)
@@ -292,12 +293,12 @@ def rule_tricolon(segs, profile, reg):
 
 
 def rule_compressed_antithesis(segs, profile, reg):
-    """', not X' tails. Short lines, headings, and labels flag on any tail or 'rather than'.
-    Longer prose flags only a closing ', not X.' whose negated half is short."""
+    """', not X' tails. Short lines, headings, and labels flag on any tail, 'rather than' or 'instead of'.
+    Longer prose flags a closing ', not X.' or an 'instead of X' that ends at punctuation, when the negated half is short."""
     level = reg.get("compressed_antithesis", REVIEW)
     if level == "off":
         return []
-    message = "'X, not Y' or 'rather than' tag. Delete the tail if it adds nothing."
+    message = "'X, not Y', 'rather than' or 'instead of' tag. Delete the tail if it adds nothing."
     hits = []
     for seg in segs:
         if seg.kind not in PROSE_KINDS + ("heading", "label"):
@@ -311,8 +312,11 @@ def rule_compressed_antithesis(segs, profile, reg):
             continue
         for sent in sentences_of(seg.text):
             m = ANTITHESIS_TAIL.search(sent)
-            if m and len(m.group(1).split()) <= ANTITHESIS_NEGATED_MAX_WORDS:
-                hits.append(Hit("COMPRESSED_ANTITHESIS", level, seg.line, _excerpt(sent, m.start(), 60), message))
+            if not (m and len(m.group(1).split()) <= ANTITHESIS_NEGATED_MAX_WORDS):
+                m = ANTITHESIS_INSTEAD.search(sent)
+                if not (m and len(m.group(1).split()) <= ANTITHESIS_NEGATED_MAX_WORDS):
+                    continue
+            hits.append(Hit("COMPRESSED_ANTITHESIS", level, seg.line, _excerpt(sent, m.start(), 60), message))
     return hits
 
 

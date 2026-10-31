@@ -116,7 +116,7 @@ Every rule below runs through `scripts/voice_check.py` on a draft and is scored 
 | `ANNOUNCEMENT_COLON` | Mid-sentence colon introducing a clause | review | `register.announcement_colon` = block |
 | `STACCATO_RUN` | A run of consecutive short sentences at or above the staccato threshold | review | block when `targets.pct_short_le5_max` is 0 |
 | `TRICOLON` | Three short comma-separated items joined by and or or | info (reported, no effect on the verdict) | `register.tricolon` = off, info, review or block |
-| `COMPRESSED_ANTITHESIS` | A ", not X" or rather than tail in a line under 12 words, a heading or a label, or a closing ", not X." with a negated half of four words or fewer | review | `register.compressed_antithesis` |
+| `COMPRESSED_ANTITHESIS` | A ", not X", rather than or instead of tail in a line under 12 words, a heading or a label, or in longer prose a closing ", not X." or an "instead of X" that ends at punctuation, with a negated half of four words or fewer | review | `register.compressed_antithesis` |
 | `CLOSING_CAVEAT` | The last paragraph or either of the last two sentences opens with a caveat phrase such as keep in mind or note that, or the last paragraph opens with However | review | `register.closing_caveat`, `bans.caveat_phrases` |
 | `BENEFIT_TAIL` | A sentence ends in so you can, which lets you, helping you, allowing you, or ensuring | review | `register.benefit_tail` |
 | `TAGLINE` | A prose line of 8 words or fewer made of abstract nouns with no finite verb | review | `register.tagline` |
