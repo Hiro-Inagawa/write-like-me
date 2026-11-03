@@ -20,7 +20,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
 from voice_check import check_text  # noqa: E402
-from voice_profile import DEFAULT_PROFILE, load_profile  # noqa: E402
+from voice_profile import DEFAULT_PROFILE, default_profile, load_profile  # noqa: E402
 
 for _s in (sys.stdout, sys.stderr):
     try:
@@ -156,6 +156,8 @@ def main(argv=None) -> int:
         p.add_argument("--goldens", required=True)
         p.add_argument("--profile")
         p.add_argument("--register")
+        p.add_argument("--language", choices=("en", "de"), default="en",
+                       help="Baseline language when no --profile is given")
         if name == "score":
             p.add_argument("--gate")
             p.add_argument("--tolerance", type=float, default=0.0)
@@ -192,7 +194,7 @@ def main(argv=None) -> int:
         return 0 if outcome["ok"] else 1
     try:
         goldens = load_goldens(args.goldens)
-        profile = load_profile(args.profile) if args.profile else DEFAULT_PROFILE
+        profile = load_profile(args.profile) if args.profile else default_profile(args.language)
     except (OSError, ValueError) as exc:
         print("ERROR: %s" % exc)
         return 2

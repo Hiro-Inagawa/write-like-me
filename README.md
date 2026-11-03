@@ -10,6 +10,8 @@ It prints every em dash, filler phrase, hedge, and AI tell with a line number an
 
 A Claude Code skill that analyzes how you write and generates a personalized voice profile for writing and revising prose. It uses linguistic and psychological measurement methods rather than subjective descriptions to capture your actual style from a corpus of your own writing.
 
+**New in v3.2 (November 2026). German.** A voice can now be German (Hochdeutsch). The checker knows the AI habits of German text: the English tells in German words, and the ones that only exist in German, such as English quotation marks, English number formats, word-for-word translations from English and a text that mixes du and Sie. The measurements use German function words, German readability formulas and the German spaCy model. Details are in the section "German" below. In German the skill can be called "Schreib wie ich".
+
 **New in v3 (October 2026).** The skill now teaches the method as well as measuring the result. For every text that a reader will see, it works in two messages. The first explains the subject to the author in plain paragraphs. The second, sent after approval, is the text, cut from that explanation. The checker gained six reader-text rules, a check that the text contains no number or name that the explanation lacked, and a check that a rejected phrase does not return. Claude Code hooks run the method and the checker without a reminder. Details are in the sections "The two messages", "New checks in v3", "Hooks for Claude Code" and "Provisional rules", and in [CHANGELOG.md](CHANGELOG.md).
 
 **New in v2 (September 2026).** The skill now ships a deterministic checker. After a draft is written, `python scripts/voice_check.py draft.md --profile voices/<name>/profile.json` reports every violation with a line number and a fix, and exits non-zero on a hard rule, so the voice is enforced by code instead of by asking the model to be careful. Each voice also gets a machine-readable `profile.json` and a golden test set, and an eval harness gates every rule change. Details are in the sections "Checking a draft" and "Evaluating the checker" below, and in [CHANGELOG.md](CHANGELOG.md).
@@ -91,6 +93,16 @@ The severity of each rule is set per register in `profile.json`. `info` hits app
 ## HOOKS FOR CLAUDE CODE
 
 `scripts/writing-gate-hook.mjs` runs in two modes. The `prompt` mode adds the method to the context when a prompt asks for a text that a reader will see. The `post-write` mode runs the checker on every reader text that was just written and blocks on `VOICE_CHECK_BLOCK`. It needs Node and no packages. When `hook.json` names `explanationFile` and `rejectedFile`, or the environment variables `WRITE_LIKE_ME_EXPLANATION` and `WRITE_LIKE_ME_REJECTED` are set, the hook passes both files to the checker, and a REVIEW verdict prints the drift lines next to the review hits. The voice folder is `voices/<name>/` inside the skill folder, and any other location works through `WRITE_LIKE_ME_PROFILE`. The exact `settings.json` entries and the `hook.json` options are in `references/10-hooks.md`. Run `node --test tests/*.test.mjs` to test the hook.
+
+## GERMAN
+
+Analyze a German corpus with `--language de`, and the profile records `"language": "de"`. From then on the checker runs the German baseline in `references/00-universal-baseline-de.md`. Without a profile, `python scripts/voice_check.py draft.md --language de` checks any German text.
+
+The German baseline has two parts. The first is the English baseline in German words, for example `Es ist wichtig zu beachten, dass`, `In der heutigen schnelllebigen Welt`, `nicht nur … sondern auch`, `revolutionieren` and `innovativ`. The second covers what only happens in German: `"…"` or `“…”` in place of `„…“`, `50%` and `z.B.` in place of `50 %` and `z. B.`, English decimal points and dates, English title case in headings, phrases such as `Sinn machen` and `am Ende des Tages`, sentences that end in `…, die Bedeutung hervorhebend`, a text that switches between du and Sie, piles of `darüber hinaus` and `zudem`, and umlauts written as `ue`.
+
+Gender forms such as `Kund*innen` are the writer's choice. The baseline only flags a text that mixes forms. A voice that never uses them sets `gender_characters` to `forbidden`.
+
+The German rules come from the German Wikipedia guide to AI-generated text and from a 2024 study of German LLM text by TU Berlin, plus German typography rules. The German goldens are in `eval/goldens/universal-de.goldens.jsonl`.
 
 ## PROVISIONAL RULES
 
@@ -184,6 +196,7 @@ Two optional packages add extended features (install via `pip install -r scripts
 |---------|------|
 | `textstat` | Readability scores |
 | `spacy` + `en_core_web_sm` | POS-rhythm, dependency depth, passive voice rate |
+| `de_core_news_sm` | The same for a German corpus (`python -m spacy download de_core_news_sm`) |
 
 ---
 
@@ -226,7 +239,7 @@ Every voice now ships with a deterministic checker. Run it on any draft:
 
     python scripts/voice_check.py draft.md --profile voices/<your-name>/profile.json
 
-It prints every hit with a line number and a fix, then a verdict. `block` hits are zero-tolerance rules from your profile and the universal baseline. `review` hits are patterns with documented exceptions, so you decide. The exit code is 1 on a block, which makes the checker usable as a gate in scripts, hooks, and CI. Without `--profile` it runs the universal anti-AI baseline only, which works on any text.
+It prints every hit with a line number and a fix, then a verdict. `block` hits are zero-tolerance rules from your profile and the universal baseline. `review` hits are patterns with documented exceptions, so you decide. The exit code is 1 on a block, which makes the checker usable as a gate in scripts, hooks, and CI. Without `--profile` it runs the universal anti-AI baseline only, which works on any text. Add `--language de` for German text.
 
 ## EVALUATING THE CHECKER
 
@@ -238,13 +251,17 @@ The reader-text rules have their own goldens and baseline:
 
     python eval/voice_eval.py score --goldens eval/goldens/reader.goldens.jsonl --gate eval/baselines/reader.json
 
+The German baseline too:
+
+    python eval/voice_eval.py score --goldens eval/goldens/universal-de.goldens.jsonl --language de --gate eval/baselines/universal-de.json
+
 Each voice gets its own `goldens.jsonl` built from the rule examples you approved during the build. The metrics that matter are `block_recall` (does it catch what it must) and `false_alarm_rate` (does it flag what it must not).
 
 ---
 
 ## UNIVERSAL BASELINE
 
-Every voice inherits a set of zero-tolerance rules for patterns that AI systems produce by default and that human writers do not. These are in `references/00-universal-baseline.md` and are active regardless of what any individual voice profile specifies.
+Every voice inherits a set of zero-tolerance rules for patterns that AI systems produce by default and that human writers do not. These are in `references/00-universal-baseline.md` (German voices: `references/00-universal-baseline-de.md`) and are active regardless of what any individual voice profile specifies.
 
 The baseline removes em dashes as clause separators, stance adverbials (`Importantly,`, `Notably,`), filler openers (`It is worth noting that`), unsupported evaluative adjectives (`innovative`, `robust`), and performative verb choices (`delve`, `leverage`, `foster`). These patterns appear in AI-generated text at rates far above any individual human writer's baseline, and removing them is a prerequisite for the voice profile to be meaningful.
 
@@ -258,6 +275,7 @@ write-like-me/
   SKILL.md                          # Mode detection, routing, 7-stage workflow
   references/
     00-universal-baseline.md        # Anti-AI-tell rules, always active
+    00-universal-baseline-de.md     # The German baseline
     01-corpus-discovery.md          # What makes a good corpus; consent guardrail
     02-author-filtering.md          # Filtering exports; preview/confirm step
     03-methodology.md               # Full academic grounding for all features
@@ -277,6 +295,8 @@ write-like-me/
     voice_rules.py                  # Deterministic detectors, parameterized by profile
     voice_profile.py                # Load, validate, and initialize profile.json
     voice_rules_reader.py           # Reader-text rules added in v3
+    voice_rules_de.py               # German-only rules
+    voice_lang.py                   # German word lists for the measurements and the rules
     voice_check.py                  # CLI checker, prints hits and a verdict, sets exit code
     writing-gate-hook.mjs           # Claude Code hooks, prompt and post-write
     requirements.txt                # Optional Python dependencies
@@ -286,9 +306,11 @@ write-like-me/
     goldens/
       universal.goldens.jsonl       # Ships with the repo
       reader.goldens.jsonl          # Reader-text rule goldens, made-up passages
+      universal-de.goldens.jsonl    # German baseline goldens, made-up passages
     baselines/
       universal.json                # Ships with the repo
       reader.json                   # Ships with the repo
+      universal-de.json             # Ships with the repo
   tests/                            # Unit tests, fixtures, and a negative control for the checker
   templates/
     generated-01-generative.md      # Skeleton for write-time guidance

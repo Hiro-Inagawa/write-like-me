@@ -31,7 +31,7 @@ Look for features at the extremes of the distribution. Thresholds:
 | 0% short sentences (≤5 words) | "no fragment sentences" (provisional below 20,000 words) |
 | 100% long sentences (≥30 words) | "always writes in extended sentences" — unlikely, flag as anomaly |
 | Booster tokens = 0 | "never uses empty intensifiers" |
-| Contractions = 0 in the primary register (`contractions.count` and `contractions.per_100w` in the stylometry JSON), corpus of 20,000 words or more | candidate rule "no contractions", set as `contractions: forbidden` once the author confirms it |
+| Contractions = 0 in the primary register (`contractions.count` and `contractions.per_100w` in the stylometry JSON), corpus of 20,000 words or more | candidate rule "no contractions", set as `contractions: forbidden` once the author confirms it. English only, a German corpus has no contraction measure |
 | Contractions = 0 in the primary register, corpus under 20,000 words | the same candidate rule, provisional, marked for the author's confirmation |
 | Contractions above 0 | no rule. Report the rate per 100 words so the author sees it |
 | Hedging rate < 0.2/100w | "hedges sparingly; calibrated to actual uncertainty" |

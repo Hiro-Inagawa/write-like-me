@@ -24,7 +24,8 @@ INLINE_CODE = re.compile(r"`[^`\n]+`")
 LINK = re.compile(r"\[([^\]]+)\]\([^)]+\)")
 IMAGE = re.compile(r"!\[[^\]]*\]\([^)]*\)")
 HTML = re.compile(r"<[^>]+>")
-EMPHASIS = re.compile(r"(\*{1,3}|_{1,3})(\S.*?\S|\S)\1")
+# A star or underscore between two letters is a German gender form (Kund*innen), not emphasis
+EMPHASIS = re.compile(r"(?<![^\W\d_])(\*{1,3}|_{1,3})(\S.*?\S|\S)\1(?![^\W\d_])")
 
 PROSE_KINDS = ("prose", "bullet")
 

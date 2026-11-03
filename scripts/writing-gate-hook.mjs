@@ -62,8 +62,9 @@ const PROMPT_CONTEXT_DIRECT =
 const EXPLAIN_OFF_PHRASES = [
   'skip the explanation', 'without the explanation', 'without an explanation', 'no explanation first',
   'just write it', 'write it directly',
+  'ohne erklärung', 'ohne die erklärung', 'schreib es einfach', 'schreib es direkt', 'schreibe es direkt',
 ];
-const EXPLAIN_ON_PHRASES = ['explain first', 'explain it first', 'with the explanation'];
+const EXPLAIN_ON_PHRASES = ['explain first', 'explain it first', 'with the explanation', 'erst erklären', 'erkläre zuerst', 'erklär zuerst'];
 
 const REQUEST_VERBS =
   'write|draft|rewrite|revise|reword|proofread|polish|shorten|improve|reply|respond|answer|formulate|suggest';
@@ -73,11 +74,25 @@ const READER_NOUNS =
   'intro|introduction|statement|note to|outreach|dm|readme';
 const VERB_NOUN_RE = new RegExp(
   `\\b(?:${REQUEST_VERBS})\\b[\\s\\S]{0,60}?\\b(?:${READER_NOUNS})\\b`, 'i');
+// German prompts. JavaScript \b does not see ä, ö, ü and ß as word characters, so the German
+// patterns use explicit letter boundaries.
+const DE_REQUEST_VERBS =
+  'schreib|schreibe|schreiben|formulier|formuliere|formulieren|überarbeite|überarbeiten|kürze|kürzen|' +
+  'verbessere|verbessern|korrigiere|korrigieren|antworte|beantworte|entwirf|entwerfe|übersetze';
+const DE_READER_NOUNS =
+  'e-mail|email|mail|brief|anschreiben|beitrag|post|profil|text|nachricht|antwort|bewerbung|zusammenfassung|' +
+  'beschreibung|absatz|einleitung|überschrift|anzeige|kommentar|rede|readme';
+// German often puts the verb at the end ("eine Antwort auf die Mail schreiben"), so both orders count.
+const DE_VERB = `(?<![\\p{L}])(?:${DE_REQUEST_VERBS})(?![\\p{L}])`;
+const DE_NOUN = `(?<![\\p{L}])(?:${DE_READER_NOUNS})`;
+const DE_VERB_NOUN_RE = new RegExp(`${DE_VERB}[\\s\\S]{0,60}?${DE_NOUN}|${DE_NOUN}[\\s\\S]{0,60}?${DE_VERB}`, 'iu');
 const TRIGGER_PHRASES = [
   'how does this come across', 'how do i come across', 'is this good', 'does this sound',
   'sounds good', 'in your own words', 'what should i write', 'what can i write',
   'can you suggest what', 'proper english', 'grammar', 'make it shorter', 'too long',
   'on point', 'in my style', 'write like me', 'write-like-me', 'my voice',
+  'wie klingt das', 'wie kommt das rüber', 'ist das gut so', 'in meinen worten', 'in eigenen worten',
+  'in meinem stil', 'schreib wie ich', 'kürzer machen',
 ];
 
 // ---------- shared helpers ----------
@@ -343,7 +358,7 @@ export function promptAsksForReaderText(prompt, config = DEFAULT_CONFIG) {
   if ([...TRIGGER_PHRASES, ...(config.promptPhrases || []).map((p) => p.toLowerCase())].some((p) => lower.includes(p))) {
     return true;
   }
-  return VERB_NOUN_RE.test(text);
+  return VERB_NOUN_RE.test(text) || DE_VERB_NOUN_RE.test(text);
 }
 
 // Whether the explanation step runs: a phrase in the prompt wins, then WRITE_LIKE_ME_EXPLAIN, then hook.json.

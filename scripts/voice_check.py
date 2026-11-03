@@ -19,13 +19,15 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from stylometry import (compute_hedging_booster, compute_pronoun_rates, compute_punctuation_rates,  # noqa: E402
                         compute_sentence_stats, split_sentences, tokenize_words)
-from voice_profile import DEFAULT_PROFILE, load_profile, resolve_register, validate_profile  # noqa: E402
+from voice_lang import LANGUAGES, lang_of  # noqa: E402
+from voice_profile import default_profile, load_profile, resolve_register, validate_profile  # noqa: E402
 from voice_rules import BLOCK, REVIEW, run_rules  # noqa: E402
 from voice_segment import prose_text, segment  # noqa: E402
 
 import re  # noqa: E402
 
-CITATION_HEADINGS = re.compile(r"^(sources?|references?|bibliography|further reading|see also|related( articles| reading| links| topics)?|citations?|works cited|footnotes?)\b", re.IGNORECASE)
+CITATION_HEADINGS = re.compile(r"^(sources?|references?|bibliography|further reading|see also|related( articles| reading| links| topics)?|citations?|works cited|footnotes?"
+                               r"|quellen|literatur(verzeichnis)?|einzelnachweise|weiterführende|siehe auch|fußnoten|anmerkungen)\b", re.IGNORECASE)
 
 for _s in (sys.stdout, sys.stderr):
     try:
@@ -44,8 +46,9 @@ def compute_drift(text: str, profile: dict, reg: dict) -> list:
     sentences = split_sentences(text)
     stats = compute_sentence_stats(sentences)
     punct = compute_punctuation_rates(text, len(words))
-    hb = compute_hedging_booster(words, text)
-    pron = compute_pronoun_rates(words)
+    lang = lang_of(profile)
+    hb = compute_hedging_booster(words, text, lang)
+    pron = compute_pronoun_rates(words, lang)
     observed = {
         "mean_sentence_words": stats.get("mean_words"),
         "pct_short_le5_max": stats.get("pct_short_le5"),
@@ -134,6 +137,8 @@ def main(argv=None) -> int:
     parser.add_argument("--quiet", action="store_true", help="Print only the final token")
     parser.add_argument("--explanation", help="File with the approved explanation. Every number and name in the draft must appear in it")
     parser.add_argument("--rejected", help="File with one rejected phrase per line. Any of them in the draft blocks")
+    parser.add_argument("--language", choices=LANGUAGES,
+                        help="Baseline language without --profile: en or de (standard German). A profile sets its own")
     parser.add_argument("--check-citations", action="store_true",
                         help="Also check text under Sources, References, and similar headings (skipped by default)")
     args = parser.parse_args(argv)
@@ -143,7 +148,7 @@ def main(argv=None) -> int:
     except OSError as exc:
         print("ERROR: cannot read draft: %s" % exc)
         return 2
-    profile = DEFAULT_PROFILE
+    profile = default_profile(args.language or "en")
     if args.profile:
         try:
             profile = load_profile(args.profile)

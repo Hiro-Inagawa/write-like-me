@@ -1,7 +1,7 @@
 ---
 name: write-like-me
-version: 3.1.1
-description: Use when writing or revising prose for a reader (emails, cover letters, form-field answers, profile texts, portfolio pages, listing and README prose), when asked about such a text, or when building a new writing voice from a corpus. On invoke: checks the voices/ folder. If voices exist, routes to writing mode, which follows a two-message method (explain first, then write the text), and the explanation step can be switched off. If none exist, starts the 7-stage voice-building workflow. Supports multiple named voices. Includes a deterministic draft checker (scripts/voice_check.py), an eval harness, and Claude Code hooks.
+version: 3.2.0
+description: Use when writing or revising prose for a reader (emails, cover letters, form-field answers, profile texts, portfolio pages, listing and README prose), when asked about such a text, or when building a new writing voice from a corpus. On invoke: checks the voices/ folder. If voices exist, routes to writing mode, which follows a two-message method (explain first, then write the text), and the explanation step can be switched off. If none exist, starts the 7-stage voice-building workflow. Supports multiple named voices, in English or German (Hochdeutsch). Includes a deterministic draft checker (scripts/voice_check.py), an eval harness, and Claude Code hooks.
 ---
 
 # Write Like Me
@@ -42,6 +42,19 @@ On every invoke:
 
 ---
 
+## Languages
+
+A voice is English or German. German means standard German (Hochdeutsch). The language is set once, when the corpus is analyzed, and is stored as `"language": "de"` in `profile.json`. Everything after that follows the profile: the checker uses the German word lists and the German-only rules, and the measurements use German function words, German abbreviations, German readability formulas and the spaCy model `de_core_news_sm`. A profile without `language` is English. In German the skill can be called "Schreib wie ich".
+
+For a German voice:
+
+- Pass `--language de` to `scripts/stylometry.py` in Stage 3 and to `scripts/corpus_conflicts.py` in Stage 4. `voice_profile.py init` takes the language from the stylometry file.
+- Read `references/00-universal-baseline-de.md` wherever this file says `references/00-universal-baseline.md`.
+- Two register keys exist for German only. `en_dash` (off, review or block) controls the Gedankenstrich check. `gender_characters` (off, allowed, review or forbidden) decides whether the voice uses forms such as Kund*innen. The default is `allowed`, which checks only that one text does not mix forms. Gender forms are the writer's choice, not an AI tell.
+- Without a profile, `python scripts/voice_check.py <draft> --language de` runs the German baseline.
+
+---
+
 ## Where voices live
 
 The voice folder is `voices/<name>/` inside the folder this skill is installed in. Any other location works when the tools are pointed at it. The checker and the eval harness take `--profile <path>/profile.json`, and the hook takes the environment variable `WRITE_LIKE_ME_PROFILE` or a `profile` entry in `voices/<name>/hook.json`. The hook reads `hook.json` from the folder of the profile it uses. Reports, goldens and the eval baseline are written into the voice folder and never into the corpus folder.
@@ -55,7 +68,7 @@ When a voice is selected:
 1. Read `references/09-how-to-write.md`. It describes how the writing is done, and everything below checks the result. Choose the register first. A profile with one register uses it by default, and `--register` can be left out. With several registers, pass the one that matches the text (a letter, a post, an essay), and ask the author when the text fits none of them.
 2. Read `voices/<name>/01-generative.md`. Positive patterns, quantitative targets, exemplars.
 3. Read `voices/<name>/02-corrective.md`. Hard bans, scan checklist.
-4. Read `references/00-universal-baseline.md`. Always active, applies to every voice.
+4. Read `references/00-universal-baseline.md`, or `references/00-universal-baseline-de.md` for a German voice. Always active, applies to every voice.
 5. State in one sentence what you will write or revise. Wait for confirmation.
 
 ### The two messages
@@ -131,7 +144,9 @@ For each register:
 python scripts/stylometry.py <path> --register <name> --output voices/<name>/<register>.stylometry.json
 ```
 
-The script creates the output folder when it is missing. Add `--report` to write the Markdown report next to the JSON file. The report goes into the voice folder and never into the corpus folder. Report word counts per register and any warnings. The JSON carries a contraction count and a rate per 100 words.
+For a German corpus, add `--language de`. Install the German spaCy model first if spaCy is used: `python -m spacy download de_core_news_sm`.
+
+The script creates the output folder when it is missing. Add `--report` to write the Markdown report next to the JSON file. The report goes into the voice folder and never into the corpus folder. Report word counts per register and any warnings. The JSON of an English corpus carries a contraction count and a rate per 100 words. A German corpus has none, because German has few contractions.
 
 ### Stage 4. Mine Rules
 
@@ -144,7 +159,7 @@ Three sources, in order:
 3. **Negative space.** Sentence shapes never used, connective patterns absent, lengths never reached.
 
 4. **Conflicts with the universal baseline.** Run the checker over the author's own corpus with the universal baseline:
-   `python scripts/corpus_conflicts.py <corpus folder or filtered text file>`
+   `python scripts/corpus_conflicts.py <corpus folder or filtered text file>` (add `--language de` for a German corpus)
    Every rule that blocks somewhere in the author's own writing (for example `NOT_ONLY_BUT_ALSO`) is reported with a count and examples. Each one is a conflict that the author decides in Stage 5. Keeping the habit means an entry in `rule_overrides` in `profile.json`, and dropping it means the rule stays. Do not decide for the author. The step ends with `VOICE_CONFLICTS_FOUND` or `VOICE_CONFLICTS_NONE`.
 
 Compile candidate rules. The statistics table in `references/04-rule-mining.md` includes the contraction rate. A count of 0 contractions in the primary register is the candidate rule "no contractions".
@@ -223,6 +238,7 @@ Report pass or fail per sample. Flag any rule that needs sharpening.
 | Setting up the Claude Code hooks | `references/10-hooks.md` |
 | Writing new prose | `voices/<name>/01-generative.md` + `references/00-universal-baseline.md` |
 | Revising prose | `voices/<name>/02-corrective.md` + `references/00-universal-baseline.md` |
+| A German voice | `references/00-universal-baseline-de.md` in place of `references/00-universal-baseline.md` |
 | Finding corpus sources | `references/01-corpus-discovery.md` |
 | Filtering conversation exports | `references/02-author-filtering.md` |
 | Understanding measured features | `references/03-methodology.md` |
@@ -247,6 +263,8 @@ Report pass or fail per sample. Flag any rule that needs sharpening.
 | `scripts/corpus_conflicts.py` | Run the universal baseline over the author's own corpus and list every rule that blocks, for the author to decide |
 | `scripts/voice_check.py` | Deterministic draft checker. Reports hits, drift, a verdict, and an exit code |
 | `scripts/voice_profile.py` | Load, validate, and initialize a voice `profile.json`. `preflight` reports missing packages and a small corpus |
+| `scripts/voice_lang.py` | Language data: German word lists for the measurements and the rules |
+| `scripts/voice_rules_de.py` | The German-only rules: quotation marks, dashes, number format, heading case, calques, participle tails, du and Sie, gender forms, connectives, umlauts |
 | `scripts/voice_rules_reader.py` | The reader-text rules: closing caveat, benefit tail, tagline, length band, additions, repeated phrase |
 | `scripts/writing-gate-hook.mjs` | Claude Code hooks for prompts and for files that were just written |
 | `eval/voice_eval.py` | Score `voice_check.py` against golden passages, gate regressions, and `verify` generated samples |

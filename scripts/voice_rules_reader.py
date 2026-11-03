@@ -11,6 +11,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import voice_lang as L  # noqa: E402
 from stylometry import tokenize_words  # noqa: E402
 from voice_rules import BLOCK, REVIEW, Hit, _excerpt, _in_quotes  # noqa: E402
 from voice_segment import PROSE_KINDS, prose_text, sentences_of  # noqa: E402
@@ -33,11 +34,14 @@ TAGLINE_STOP = {"and", "or", "for", "of", "with", "the", "a", "an", "every", "yo
                 "on", "to", "from", "by", "without", "at", "into", "all", "each", "no", "any", "as", "than"}
 
 NUMBER = re.compile(r"\d[\d,]*(?:\.\d+)?")
+DE_BENEFIT = re.compile(L.DE_BENEFIT_COMMA, re.IGNORECASE)
 CAPITAL = re.compile(r"[A-Z][A-Za-z0-9]*")
 
 
-def _abstract(word):
+def _abstract(word, nouns=ABSTRACT_NOUNS):
     w = word.lower()
+    if nouns is not ABSTRACT_NOUNS:
+        return w in nouns
     if w in ABSTRACT_NOUNS:
         return True
     if w.endswith("ies") and w[:-3] + "y" in ABSTRACT_NOUNS:
@@ -60,6 +64,7 @@ def rule_closing_caveat(segs, profile, reg):
     if not prose:
         return []
     phrases = [p.lower() for p in profile.get("bans", {}).get("caveat_phrases", [])]
+    openers = L.DE_PARAGRAPH_OPENERS if L.lang_of(profile) == "de" else PARAGRAPH_OPENERS
     flat = [(s.line, sent) for s in prose for sent in sentences_of(s.text)]
     candidates = [(line, sent, False) for line, sent in flat[-2:]]
     if len(prose) >= 2:
@@ -71,7 +76,7 @@ def rule_closing_caveat(segs, profile, reg):
         norm = LEAD_JUNK.sub("", sent).lower()
         found = next((p for p in phrases if _starts_with(norm, p)), None)
         if found is None and opens_paragraph:
-            found = next((o for o in PARAGRAPH_OPENERS if _starts_with(norm, o)), None)
+            found = next((o for o in openers if _starts_with(norm, o)), None)
         if found and (line, sent) not in seen:
             seen.add((line, sent))
             hits.append(Hit("CLOSING_CAVEAT", level, line, _excerpt(sent, 0, 70),
@@ -83,12 +88,13 @@ def rule_benefit_tail(segs, profile, reg):
     level = reg.get("benefit_tail", REVIEW)
     if level == "off":
         return []
+    german = L.lang_of(profile) == "de"
     hits = []
     for seg in segs:
         if seg.kind not in PROSE_KINDS:
             continue
         for sent in sentences_of(seg.text):
-            m = BENEFIT_COMMA.search(sent) or BENEFIT_PLAIN.search(sent)
+            m = DE_BENEFIT.search(sent) if german else (BENEFIT_COMMA.search(sent) or BENEFIT_PLAIN.search(sent))
             if m and not _in_quotes(sent, m.start()):
                 hits.append(Hit("BENEFIT_TAIL", level, seg.line, _excerpt(sent, m.start(), 60),
                                 "Benefit tail at the end of the sentence. State what the thing does and stop."))
@@ -113,13 +119,28 @@ def _is_tagline(text):
     return sum(1 for w in content if _abstract(w)) * 2 >= len(content)
 
 
+def _is_tagline_de(text):
+    """German taglines: up to eight words, no verb signal, at least half of the content words abstract nouns."""
+    if any(c.isdigit() for c in text) or text.rstrip().endswith(("?", ":")) or '"' in text or "„" in text:
+        return False
+    words = [w.lower() for w in re.findall(r"[^\W\d_][^\W\d_'-]*", text)]
+    if not 2 <= len(words) <= TAGLINE_MAX_WORDS or len(re.findall(r"\S+", text)) > TAGLINE_MAX_WORDS:
+        return False
+    if any(w in L.DE_FINITE_SIGNALS for w in words):
+        return False
+    content = [w for w in words if w not in L.DE_TAGLINE_STOP]
+    abstract = sum(1 for w in content if w in L.DE_ABSTRACT_NOUNS)
+    return abstract > 0 and abstract * 2 >= len(content)
+
+
 def rule_tagline(segs, profile, reg):
     level = reg.get("tagline", REVIEW)
     if level == "off":
         return []
+    check = _is_tagline_de if L.lang_of(profile) == "de" else _is_tagline
     return [Hit("TAGLINE", level, s.line, _excerpt(s.text, 0, 60),
                 "Short line of abstract nouns with no verb. Write a sentence that says what the thing does.")
-            for s in segs if s.kind == "prose" and _is_tagline(s.text)]
+            for s in segs if s.kind == "prose" and check(s.text)]
 
 
 def rule_length_band(segs, profile, reg):
@@ -144,7 +165,7 @@ def _numbers(text):
     found = set()
     for m in NUMBER.finditer(text):
         tail = text[m.end():m.end() + 9].lower()
-        pct = tail.startswith("%") or tail.startswith(" percent") or tail.startswith(" per cent")
+        pct = tail.startswith(("%", " %", " percent", " per cent", " prozent"))
         found.add((m.group(0).replace(",", "").rstrip("."), pct))
     return found
 
@@ -155,6 +176,8 @@ def rule_additions(segs, profile, reg, ctx):
     if explanation is None or level == "off":
         return []
     known_words = {w.lower() for w in re.findall(r"[A-Za-z0-9][A-Za-z0-9'-]*", explanation)}
+    # German capitalizes every noun, so a capital letter does not mark a name. German checks numbers only.
+    check_names = L.lang_of(profile) != "de"
     known_numbers = _numbers(explanation)
     known_plain = {v for v, _ in known_numbers}
     hits, seen = [], set()
@@ -174,7 +197,7 @@ def rule_additions(segs, profile, reg, ctx):
                 ok = (value, pct) in known_numbers if pct else value in known_plain
                 if not ok:
                     add(value + ("%" if pct else ""), "Number", seg.line, sent)
-            for m in CAPITAL.finditer(sent):
+            for m in (CAPITAL.finditer(sent) if check_names else ()):
                 if m.start() == 0 or m.group(0) == "I":
                     continue
                 before = sent[:m.start()].rstrip()

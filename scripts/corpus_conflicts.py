@@ -23,7 +23,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from stylometry import is_generated_artifact  # noqa: E402
 from voice_check import check_text  # noqa: E402
-from voice_profile import DEFAULT_PROFILE  # noqa: E402
+from voice_profile import default_profile  # noqa: E402
 
 for _s in (sys.stdout, sys.stderr):
     try:
@@ -39,12 +39,13 @@ def corpus_files(path: Path) -> list:
     return [f for f in files if not is_generated_artifact(f, path)]
 
 
-def find_conflicts(path: Path, examples: int = 3) -> list:
+def find_conflicts(path: Path, examples: int = 3, language: str = "en") -> list:
     """Return one entry per rule that blocks somewhere in the corpus, most frequent first."""
     found = {}
+    profile = default_profile(language)
     for file in corpus_files(path):
         text = file.read_text(encoding="utf-8", errors="replace")
-        result = check_text(text, DEFAULT_PROFILE, DEFAULT_PROFILE["default_register"], str(file))
+        result = check_text(text, profile, profile["default_register"], str(file))
         for hit in result["hits"]:
             if hit["severity"] != "block":
                 continue
@@ -65,12 +66,13 @@ def main(argv=None) -> int:
     parser.add_argument("corpus", help="A corpus file or folder")
     parser.add_argument("--examples", type=int, default=3, help="Examples to print per rule (default 3)")
     parser.add_argument("--json", action="store_true", help="Print the conflicts as JSON")
+    parser.add_argument("--language", choices=("en", "de"), default="en", help="Language of the corpus (default en)")
     args = parser.parse_args(argv)
     path = Path(args.corpus)
     if not path.exists():
         print("ERROR: %s does not exist" % path)
         return 2
-    rows = find_conflicts(path, args.examples)
+    rows = find_conflicts(path, args.examples, args.language)
     if args.json:
         print(json.dumps(rows, indent=2, ensure_ascii=False))
     else:

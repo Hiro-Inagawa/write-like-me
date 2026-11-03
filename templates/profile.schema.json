@@ -15,6 +15,11 @@
       "description": "Name of the voice this profile describes, e.g. 'universal' or 'professional'.",
       "type": "string"
     },
+    "language": {
+      "description": "Language of the voice. 'en' (the default when absent) or 'de' for standard German. German voices use the German word lists and the German-only rules.",
+      "type": "string",
+      "enum": ["en", "de"]
+    },
     "generated": {
       "description": "ISO date the profile was generated, or empty string for the shipped default.",
       "type": "string"
@@ -83,7 +88,7 @@
       "items": { "type": "string" }
     },
     "policyValue": {
-      "description": "Four-state policy used by semicolons, contractions, and questions.",
+      "description": "Four-state policy used by semicolons, contractions, questions, and gender_characters.",
       "type": "string",
       "enum": ["off", "allowed", "review", "forbidden"]
     },
@@ -109,6 +114,8 @@
         "additions": { "$ref": "#/definitions/tristateValue" },
         "empty_intensifiers": { "$ref": "#/definitions/tristateValue" },
         "exclamations": { "$ref": "#/definitions/tristateValue" },
+        "en_dash": { "$ref": "#/definitions/tristateValue", "description": "German only. Spaced en dash or spaced hyphen used as a dash." },
+        "gender_characters": { "$ref": "#/definitions/policyValue", "description": "German only. allowed checks consistency only, review or forbidden flag every gender form such as Kund*innen, off disables both." },
         "length": {
           "description": "Two-sided word band for the register. The checker blocks outside the band when min and max are both set, and reviews when only one is set.",
           "type": "object",

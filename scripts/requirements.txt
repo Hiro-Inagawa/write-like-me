@@ -5,4 +5,5 @@ textstat>=0.7.0
 #
 # Optional: POS-rhythm, dependency tree depth, passive voice rate
 # After installing spacy, also run: python -m spacy download en_core_web_sm
+# For a German corpus also: python -m spacy download de_core_news_sm
 spacy>=3.7.0

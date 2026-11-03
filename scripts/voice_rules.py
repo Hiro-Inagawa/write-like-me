@@ -11,6 +11,7 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import voice_lang as L  # noqa: E402
 from voice_segment import PROSE_KINDS, sentences_of  # noqa: E402
 
 BLOCK = "block"
@@ -48,7 +49,30 @@ BUILDUP_STORY = re.compile(r"\btells? an? \w+ story\b", re.IGNORECASE)
 ANNOUNCEMENT_HEAD_WORDS = 5
 MANNER_AFTER = re.compile(r"\s+(marked|labeled|labelled|visible|defined|separated|stated|shown|identified|"
                           r"indicated|delineated|legible|distinguishable|distinguished|written|documented|signposted)\b")
-COLON_MID = re.compile(r"(?<=[A-Za-z\)\"'])\s*:\s+(?=[A-Za-z\"'(])")
+COLON_MID = re.compile(r"(?:(?<=[^\W\d_])|(?<=[\)\"']))\s*:\s+(?=[^\W\d_]|[\"'(„])")
+LETTERS = re.compile(r"[^\W\d_]+")
+
+_EN = {
+    "stance": STANCE_OPENERS, "filler": FILLER_OPENERS, "performative": PERFORMATIVE, "summary": SUMMARY_OPENERS,
+    "not_only": re.compile(r"\bnot only\b.*\bbut also\b", re.IGNORECASE), "tricolon": TRICOLON,
+    "tricolon_asyndetic": TRICOLON_ASYNDETIC, "antithesis_tail": ANTITHESIS_TAIL,
+    "antithesis_short": ANTITHESIS_SHORT, "antithesis_instead": ANTITHESIS_INSTEAD, "buildup_story": BUILDUP_STORY,
+    "list_intro": LIST_INTRO_WORDS,
+}
+_DE = {
+    "stance": L.DE_STANCE_OPENERS, "filler": L.DE_FILLER_OPENERS, "performative": L.DE_PERFORMATIVE,
+    "summary": L.DE_SUMMARY_OPENERS, "not_only": re.compile(L.DE_NOT_ONLY, re.IGNORECASE),
+    "tricolon": re.compile(r"\b(\w+(?: \w+){0,3}), (\w+(?: \w+){0,3}), %s (\w+(?: \w+){0,3})\b" % L.DE_TRICOLON_CONJ),
+    "tricolon_asyndetic": TRICOLON_ASYNDETIC,
+    "antithesis_tail": re.compile(L.DE_ANTITHESIS_TAIL, re.IGNORECASE),
+    "antithesis_short": re.compile(L.DE_ANTITHESIS_SHORT, re.IGNORECASE),
+    "antithesis_instead": re.compile(L.DE_ANTITHESIS_INSTEAD, re.IGNORECASE),
+    "buildup_story": re.compile(L.DE_BUILDUP_STORY, re.IGNORECASE), "list_intro": L.DE_LIST_INTRO_WORDS,
+}
+
+
+def lang_data(profile) -> dict:
+    return _DE if L.lang_of(profile) == "de" else _EN
 
 
 @dataclass(frozen=True)
@@ -60,7 +84,7 @@ class Hit:
     message: str
 
 
-QUOTED = re.compile(r'"[^"\n]{1,400}"')
+QUOTED = re.compile(r'"[^"\n]{1,400}"|„[^“”"\n]{1,400}[“”"]|»[^«\n]{1,400}«')
 
 
 def _in_quotes(text, pos):
@@ -80,7 +104,7 @@ def _phrase_hits(segs, phrases, rule, severity, message, kinds=PROSE_KINDS):
             continue
         low = seg.text.lower()
         for phrase in phrases:
-            for m in re.finditer(r"(?<![A-Za-z])" + re.escape(phrase.lower()) + r"(?![A-Za-z])", low):
+            for m in re.finditer(r"(?<![^\W\d_])" + re.escape(phrase.lower()) + r"(?![^\W\d_])", low):
                 if _in_quotes(seg.text, m.start()):
                     continue
                 if rule == "EMPTY_INTENSIFIER" and MANNER_AFTER.match(low, m.end()):
@@ -113,32 +137,37 @@ def rule_em_dash(segs, profile, reg):
 
 
 def rule_stance_opener(segs, profile, reg):
+    openers = lang_data(profile)["stance"]
+
     def pred(sent):
-        first = re.sub(r"^[\"'(\s]+", "", sent).split(" ", 1)[0].strip(",.;:!?").lower()
-        return first in STANCE_OPENERS
+        first = re.sub(r"^[\"'(\s„»]+", "", sent).split(" ", 1)[0].strip(",.;:!?").lower()
+        return first in openers
     return _sentence_hits(segs, pred, "STANCE_OPENER", BLOCK, "Stance adverbial opens the sentence. Delete it.")
 
 
 def rule_filler_opener(segs, profile, reg):
-    return _phrase_hits(segs, FILLER_OPENERS, "FILLER_OPENER", BLOCK, "Filler opener '%s'. Start with the claim.")
+    return _phrase_hits(segs, lang_data(profile)["filler"], "FILLER_OPENER", BLOCK, "Filler opener '%s'. Start with the claim.")
 
 
 def rule_performative_verb(segs, profile, reg):
+    performative = lang_data(profile)["performative"]
     hits = []
     for seg in segs:
         if seg.kind not in PROSE_KINDS:
             continue
-        for m in re.finditer(r"\b([A-Za-z]+)\b", seg.text):
-            word = m.group(1).lower()
-            if word in PERFORMATIVE:
+        for m in LETTERS.finditer(seg.text):
+            word = m.group(0).lower()
+            if word in performative:
                 hits.append(Hit("PERFORMATIVE_VERB", BLOCK, seg.line, _excerpt(seg.text, m.start()),
-                                "'%s' is a performative verb. Use '%s'." % (word, PERFORMATIVE[word])))
+                                "'%s' is a performative verb. Use '%s'." % (word, performative[word])))
     return hits
 
 
 def rule_not_only(segs, profile, reg):
-    pred = lambda s: re.search(r"\bnot only\b.*\bbut also\b", s, re.IGNORECASE) is not None
-    return _sentence_hits(segs, pred, "NOT_ONLY_BUT_ALSO", BLOCK, "'not only ... but also'. State both plainly.")
+    pattern = lang_data(profile)["not_only"]
+    pred = lambda s: pattern.search(s) is not None
+    phrase = "'nicht nur ... sondern auch'" if L.lang_of(profile) == "de" else "'not only ... but also'"
+    return _sentence_hits(segs, pred, "NOT_ONLY_BUT_ALSO", BLOCK, phrase + ". State both plainly.")
 
 
 def rule_summary_opener(segs, profile, reg):
@@ -147,20 +176,22 @@ def rule_summary_opener(segs, profile, reg):
         if seg.kind != "prose":
             continue
         low = seg.text.lower()
-        for phrase in SUMMARY_OPENERS:
+        for phrase in lang_data(profile)["summary"]:
             if low.startswith(phrase):
                 hits.append(Hit("SUMMARY_OPENER", BLOCK, seg.line, _excerpt(seg.text, 0, 50),
                                 "Paragraph opens with '%s'. Do the summarizing, do not announce it." % phrase))
     return hits
 
 
-def _adjective_hits(segs, words, rule, severity):
+def _adjective_hits(segs, words, rule, severity, lang="en"):
+    # German adjectives inflect, so a German entry is a stem that also matches -e, -er, -es, -en, -em
+    tail = r"(?:e|er|es|en|em)?\b" if lang == "de" else r"\s+(?=[A-Za-z])"
     hits = []
     for seg in segs:
         if seg.kind not in PROSE_KINDS + ("heading",):
             continue
         for word in words:
-            for m in re.finditer(r"\b" + re.escape(word) + r"\s+(?=[A-Za-z])", seg.text, re.IGNORECASE):
+            for m in re.finditer(r"\b" + re.escape(word) + tail, seg.text, re.IGNORECASE):
                 before = seg.text[max(0, m.start() - 14):m.start()].lower()
                 if word == "significant" and "statistically" in before:
                     continue
@@ -173,18 +204,22 @@ def _adjective_hits(segs, words, rule, severity):
 
 def rule_evaluative_adjective(segs, profile, reg):
     bans = profile.get("bans", {})
-    return (_adjective_hits(segs, bans.get("evaluative_block", []), "EVALUATIVE_ADJECTIVE", BLOCK)
-            + _adjective_hits(segs, bans.get("evaluative_review", []), "EVALUATIVE_ADJECTIVE_SOFT", REVIEW))
+    lang = L.lang_of(profile)
+    return (_adjective_hits(segs, bans.get("evaluative_block", []), "EVALUATIVE_ADJECTIVE", BLOCK, lang)
+            + _adjective_hits(segs, bans.get("evaluative_review", []), "EVALUATIVE_ADJECTIVE_SOFT", REVIEW, lang))
 
 
 def rule_buildup_before_data(segs, profile, reg):
+    story = lang_data(profile)["buildup_story"]
+    determiners = L.DE_LABEL_HEAD_DETERMINERS if L.lang_of(profile) == "de" else LABEL_HEAD_DETERMINERS
+
     def pred(sent):
-        if BUILDUP_STORY.search(sent):
+        if story.search(sent):
             return True
-        m = re.search(r"[A-Za-z]:\s+\d", sent)
+        m = re.search(r"[^\W\d_]:\s+\d", sent)
         if m is None:
             return False
-        return not _is_label_line(sent, m.start() + 1)
+        return not _is_label_line(sent, m.start() + 1, determiners)
     return _sentence_hits(segs, pred, "BUILDUP_BEFORE_DATA", BLOCK, "Buildup before a number. State the number directly.")
 
 
@@ -222,11 +257,11 @@ LABEL_HEAD_DETERMINERS = {"the", "this", "that", "these", "those", "a", "an", "o
                           "their", "his", "her", "your", "one", "every", "each"}
 
 
-def _is_label_line(text, pos):
+def _is_label_line(text, pos, determiners=LABEL_HEAD_DETERMINERS):
     head = text[:pos].split()
     if not head or len(head) > 3:
         return False
-    if head[0].lower() in LABEL_HEAD_DETERMINERS:
+    if head[0].lower() in determiners:
         return False
     return text[:pos].strip() == text[:pos].strip().rstrip(":")
 
@@ -235,6 +270,8 @@ def rule_announcement_colon(segs, profile, reg):
     level = reg.get("announcement_colon", REVIEW)
     if level == "off":
         return []
+    list_intro = lang_data(profile)["list_intro"]
+    determiners = L.DE_LABEL_HEAD_DETERMINERS if L.lang_of(profile) == "de" else LABEL_HEAD_DETERMINERS
     hits = []
     for seg in segs:
         if seg.kind != "prose":
@@ -245,12 +282,12 @@ def rule_announcement_colon(segs, profile, reg):
             for m in COLON_MID.finditer(sent):
                 pos = m.start()
                 head = sent[:pos].rstrip()
-                if _is_label_line(sent, pos):
+                if _is_label_line(sent, pos, determiners):
                     continue
-                head_words = re.findall(r"[A-Za-z]+|\d+", head.lower())
+                head_words = re.findall(r"[^\W\d_]+|\d+", head.lower())
                 if not head_words:
                     continue
-                if head_words[-1].isdigit() or any(w in LIST_INTRO_WORDS for w in head_words[-3:]):
+                if head_words[-1].isdigit() or any(w in list_intro for w in head_words[-3:]):
                     continue
                 if re.search(r"\d$", head):
                     continue
@@ -276,7 +313,7 @@ def rule_staccato_run(segs, profile, reg):
         sents = sentences_of(seg.text)
         run = 0
         for i, sent in enumerate(sents):
-            words = len(re.findall(r"[A-Za-z']+", sent))
+            words = len(re.findall(r"(?:[^\W\d_]|')+", sent))
             run = run + 1 if words <= short else 0
             if run == run_len:
                 hits.append(Hit("STACCATO_RUN", severity, seg.line, _excerpt(" ".join(sents[i - run_len + 1:i + 1]), 0, 70),
@@ -288,7 +325,8 @@ def rule_tricolon(segs, profile, reg):
     level = reg.get("tricolon", INFO)
     if level == "off":
         return []
-    pred = lambda s: TRICOLON.search(s) is not None or TRICOLON_ASYNDETIC.search(s) is not None
+    d = lang_data(profile)
+    pred = lambda s: d["tricolon"].search(s) is not None or d["tricolon_asyndetic"].search(s) is not None
     return _sentence_hits(segs, pred, "TRICOLON", level, "Three parallel items. Keep only if the list is taxonomic.", kinds=("prose",))
 
 
@@ -299,21 +337,23 @@ def rule_compressed_antithesis(segs, profile, reg):
     if level == "off":
         return []
     message = "'X, not Y', 'rather than' or 'instead of' tag. Delete the tail if it adds nothing."
+    d = lang_data(profile)
+    tail_re, short_re, instead_re = d["antithesis_tail"], d["antithesis_short"], d["antithesis_instead"]
     hits = []
     for seg in segs:
         if seg.kind not in PROSE_KINDS + ("heading", "label"):
             continue
         if seg.kind in ("heading", "label") or len(re.findall(r"\S+", seg.text)) < SHORT_LINE_WORDS:
-            m = ANTITHESIS_SHORT.search(seg.text)
+            m = short_re.search(seg.text)
             if m:
                 hits.append(Hit("COMPRESSED_ANTITHESIS", level, seg.line, _excerpt(seg.text, m.start(), 60), message))
                 continue
         if seg.kind not in PROSE_KINDS:
             continue
         for sent in sentences_of(seg.text):
-            m = ANTITHESIS_TAIL.search(sent)
+            m = tail_re.search(sent)
             if not (m and len(m.group(1).split()) <= ANTITHESIS_NEGATED_MAX_WORDS):
-                m = ANTITHESIS_INSTEAD.search(sent)
+                m = instead_re.search(sent)
                 if not (m and len(m.group(1).split()) <= ANTITHESIS_NEGATED_MAX_WORDS):
                     continue
             hits.append(Hit("COMPRESSED_ANTITHESIS", level, seg.line, _excerpt(sent, m.start(), 60), message))
@@ -327,7 +367,7 @@ def rule_protest_framing(segs, profile, reg):
 
 def rule_contractions(segs, profile, reg):
     policy = reg.get("contractions")
-    if policy not in ("forbidden", "review"):
+    if policy not in ("forbidden", "review") or L.lang_of(profile) != "en":
         return []
     severity = BLOCK if policy == "forbidden" else REVIEW
     hits = []
@@ -397,8 +437,12 @@ def apply_overrides(hits, profile):
 
 def run_rules(segs, profile, reg, ctx=None):
     from voice_rules_reader import CONTEXT_RULES, READER_RULES
+    extra = ()
+    if L.lang_of(profile) == "de":
+        from voice_rules_de import GERMAN_RULES
+        extra = GERMAN_RULES
     hits = []
-    for rule in RULES + READER_RULES:
+    for rule in RULES + READER_RULES + extra:
         hits.extend(rule(segs, profile, reg))
     for rule in CONTEXT_RULES:
         hits.extend(rule(segs, profile, reg, ctx or {}))

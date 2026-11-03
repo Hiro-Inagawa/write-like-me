@@ -56,6 +56,9 @@ try:
 except ImportError:
     HAS_SPACY = False
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import voice_lang as _lang  # noqa: E402
+
 # --- Constants ---
 
 FUNCTION_WORDS = frozenset({
@@ -110,6 +113,24 @@ CONCESSION_WORDS  = frozenset({"but", "however", "though", "although", "whereas"
 
 # Abbreviations that should not trigger sentence splits
 ABBREVIATIONS = re.compile(r'\b(Mr|Mrs|Ms|Dr|Prof|Sr|Jr|vs|etc|e\.g|i\.e|fig|al|cf)\.')
+# German abbreviations, and ordinals after an article or preposition ("am 2. November", "im 3. Kapitel")
+ABBREVIATIONS_DE = re.compile(r'\b(?:z\. ?B|d\. ?h|u\. ?a|o\. ?ä|u\. ?U|s\. ?o|s\. ?u|v\. ?a|i\. ?d\. ?R|bzw|ca|Nr|'
+                              r'vgl|usw|inkl|ggf|evtl|Abs|Hrsg|Jh|Mio|Mrd|Str|Tel|zzgl|ebd|sog|insb|bspw)\.')
+ORDINAL_DE = re.compile(r'\b(?:am|im|vom|zum|bis|ab|seit|der|die|das|den|dem|des)\s+\d{1,2}\.(?=\s)', re.IGNORECASE)
+
+_LANG_WORDS = {
+    "de": {"function": _lang.DE_FUNCTION_WORDS, "hedge": _lang.DE_HEDGE_TOKENS, "hedge_phrases": _lang.DE_HEDGE_PHRASES,
+           "boost": _lang.DE_BOOSTER_TOKENS, "p1sg": _lang.DE_PRONOUN_FIRST_SG, "p1pl": _lang.DE_PRONOUN_FIRST_PL,
+           "p2": _lang.DE_PRONOUN_SECOND, "p3": _lang.DE_PRONOUN_THIRD, "concession": _lang.DE_CONCESSION_WORDS},
+}
+
+
+def _words_for(lang: str) -> dict:
+    if lang in _LANG_WORDS:
+        return _LANG_WORDS[lang]
+    return {"function": FUNCTION_WORDS, "hedge": HEDGE_TOKENS, "hedge_phrases": HEDGE_PHRASES,
+            "boost": BOOSTER_TOKENS, "p1sg": PRONOUN_FIRST_SG, "p1pl": PRONOUN_FIRST_PL,
+            "p2": PRONOUN_SECOND, "p3": PRONOUN_THIRD, "concession": CONCESSION_WORDS}
 
 # --- Markdown stripping ---
 
@@ -169,8 +190,11 @@ def count_structural_markers(raw_text: str) -> dict:
 
 def split_sentences(text: str) -> list:
     """Heuristic sentence splitter that avoids common abbreviations."""
-    text = ABBREVIATIONS.sub(lambda m: m.group(0).replace('.', '<DOT>'), text)
-    parts = re.split(r'(?<=[.!?])\s+(?=[A-Z"\'(])', text)
+    protect = lambda m: m.group(0).replace('.', '<DOT>')
+    text = ABBREVIATIONS.sub(protect, text)
+    text = ABBREVIATIONS_DE.sub(protect, text)
+    text = ORDINAL_DE.sub(protect, text)
+    parts = re.split(r'(?<=[.!?])\s+(?=[A-ZÄÖÜ"\'(„»])', text)
     sentences = []
     for part in parts:
         part = part.replace('<DOT>', '.').strip()
@@ -181,7 +205,7 @@ def split_sentences(text: str) -> list:
 
 def tokenize_words(text: str) -> list:
     """Lowercase word tokens, stripping leading/trailing punctuation."""
-    raw_tokens = re.findall(r"[a-zA-Z''-]+", text)
+    raw_tokens = re.findall(r"(?:[^\W\d_]|['-])+", text)
     words = []
     for tok in raw_tokens:
         tok = tok.strip("'-").lower()
@@ -210,19 +234,21 @@ def compute_mattr(words: list, window: int = 100) -> float:
     return round(statistics.mean(ttrs), 4)
 
 
-def compute_function_word_profile(words: list) -> dict:
+def compute_function_word_profile(words: list, lang: str = "en") -> dict:
     """Frequency of each function word, normalized per 1000 words."""
     total = max(len(words), 1)
-    fw_counts = collections.Counter(w for w in words if w in FUNCTION_WORDS)
+    function_words = _words_for(lang)["function"]
+    fw_counts = collections.Counter(w for w in words if w in function_words)
     profile = {}
     for fw, count in fw_counts.most_common(50):
         profile[fw] = round(count / total * 1000, 3)
     return profile
 
 
-def compute_distinctive_content_words(words: list, top_n: int = 30) -> list:
+def compute_distinctive_content_words(words: list, top_n: int = 30, lang: str = "en") -> list:
     """Most frequent non-function content words (placeholder for true TF-IDF)."""
-    content = [w for w in words if w not in FUNCTION_WORDS and len(w) > 2]
+    function_words = _words_for(lang)["function"]
+    content = [w for w in words if w not in function_words and len(w) > 2]
     counter = collections.Counter(content)
     total = max(len(words), 1)
     return [
@@ -312,13 +338,14 @@ def compute_paragraph_stats(paragraphs: list) -> dict:
     }
 
 
-def compute_hedging_booster(words: list, raw_text: str) -> dict:
+def compute_hedging_booster(words: list, raw_text: str, lang: str = "en") -> dict:
     """Hedge and booster token rates per 100 words."""
     total = max(len(words), 1)
-    hedge_count = sum(1 for w in words if w in HEDGE_TOKENS)
-    boost_count = sum(1 for w in words if w in BOOSTER_TOKENS)
+    w = _words_for(lang)
+    hedge_count = sum(1 for t in words if t in w["hedge"])
+    boost_count = sum(1 for t in words if t in w["boost"])
     text_lower = raw_text.lower()
-    for phrase in HEDGE_PHRASES:
+    for phrase in w["hedge_phrases"]:
         hedge_count += text_lower.count(phrase)
     return {
         "hedge_per_100w": round(hedge_count / total * 100, 3),
@@ -327,13 +354,14 @@ def compute_hedging_booster(words: list, raw_text: str) -> dict:
     }
 
 
-def compute_pronoun_rates(words: list) -> dict:
+def compute_pronoun_rates(words: list, lang: str = "en") -> dict:
     """First/second/third person pronoun rates per 100 words."""
     total = max(len(words), 1)
-    p1sg = sum(1 for w in words if w in PRONOUN_FIRST_SG)
-    p1pl = sum(1 for w in words if w in PRONOUN_FIRST_PL)
-    p2   = sum(1 for w in words if w in PRONOUN_SECOND)
-    p3   = sum(1 for w in words if w in PRONOUN_THIRD)
+    w = _words_for(lang)
+    p1sg = sum(1 for t in words if t in w["p1sg"])
+    p1pl = sum(1 for t in words if t in w["p1pl"])
+    p2   = sum(1 for t in words if t in w["p2"])
+    p3   = sum(1 for t in words if t in w["p3"])
     return {
         "first_sg_per_100w": round(p1sg / total * 100, 3),
         "first_pl_per_100w": round(p1pl / total * 100, 3),
@@ -358,14 +386,15 @@ def compute_contraction_stats(text: str, word_count: int) -> dict:
     }
 
 
-def compute_concession_rate(sentences: list) -> float:
+def compute_concession_rate(sentences: list, lang: str = "en") -> float:
     """Fraction of sentences containing a concession word."""
     if not sentences:
         return 0.0
+    concession = _words_for(lang)["concession"]
     hits = 0
     for s in sentences:
         words = set(tokenize_words(s))
-        if words & CONCESSION_WORDS:
+        if words & concession:
             hits += 1
     return round(hits / len(sentences), 3)
 
@@ -381,9 +410,11 @@ def compute_hapax_ratio(words: list) -> float:
 
 # --- Tier 2: textstat ---
 
-def compute_readability(text: str) -> dict:
+def compute_readability(text: str, lang: str = "en") -> dict:
     if not HAS_TEXTSTAT or not text.strip():
         return {}
+    if lang == "de":
+        return _compute_readability_de(text)
     metrics = {
         "flesch_kincaid_grade": lambda: _textstat.flesch_kincaid_grade(text),
         "gunning_fog": lambda: _textstat.gunning_fog(text),
@@ -400,15 +431,37 @@ def compute_readability(text: str) -> dict:
     return out
 
 
+def _compute_readability_de(text: str) -> dict:
+    """German scores: Flesch reading ease with the Amstad formula and the Wiener Sachtextformel.
+    textstat keeps the language as module state, so it is set back to English afterwards."""
+    metrics = {
+        "flesch_reading_ease": lambda: _textstat.flesch_reading_ease(text),
+        "wiener_sachtextformel": lambda: _textstat.wiener_sachtextformel(text, 1),
+        "avg_syllables_per_word": lambda: round(_textstat.avg_syllables_per_word(text), 3),
+    }
+    out = {}
+    try:
+        _textstat.set_lang("de")
+        for name, fn in metrics.items():
+            try:
+                out[name] = fn()
+            except Exception:
+                continue
+    finally:
+        _textstat.set_lang("en")
+    return out
+
+
 # --- Tier 3: spaCy ---
 
-def compute_spacy_features(text: str) -> dict:
+def compute_spacy_features(text: str, lang: str = "en") -> dict:
     if not HAS_SPACY:
         return {}
+    model = _lang.SPACY_MODELS.get(lang, "en_core_web_sm")
     try:
-        nlp = _spacy.load("en_core_web_sm")
+        nlp = _spacy.load(model)
     except OSError:
-        return {"error": "spaCy model not found. Run: python -m spacy download en_core_web_sm"}
+        return {"error": "spaCy model not found. Run: python -m spacy download %s" % model}
 
     chunk = text[:50000]  # spaCy has memory limits; sample if huge
     doc = nlp(chunk)
@@ -417,7 +470,7 @@ def compute_spacy_features(text: str) -> dict:
     depths = []
     passive_count = 0
     nominalizations = 0
-    nom_suffixes = ("tion", "ness", "ment", "ity", "ism", "ance", "ence")
+    nom_suffixes = _lang.DE_NOMINAL_SUFFIXES if lang == "de" else ("tion", "ness", "ment", "ity", "ism", "ance", "ence")
     content_pos = {"NOUN", "PROPN", "VERB", "ADJ", "ADV"}
     content_words = 0
     alpha_words = 0
@@ -436,7 +489,12 @@ def compute_spacy_features(text: str) -> dict:
             return d
         depths.append(max((_hop_depth(t) for t in tokens), default=0))
 
-        verbs = [t for t in tokens if t.pos_ == "VERB"]
+        if lang == "de":
+            if any(t.lemma_ == "werden" for t in tokens) and any(t.tag_ == "VVPP" for t in tokens):
+                passive_count += 1
+            verbs = []
+        else:
+            verbs = [t for t in tokens if t.pos_ == "VERB"]
         for v in verbs:
             children_deps = {c.dep_ for c in v.children}
             if "nsubjpass" in children_deps or "auxpass" in children_deps:
@@ -469,7 +527,7 @@ def compute_spacy_features(text: str) -> dict:
 # --- Main feature aggregation ---
 
 def compute_features(text: str, register: str = "default",
-                     use_textstat: bool = True, use_spacy: bool = True) -> dict:
+                     use_textstat: bool = True, use_spacy: bool = True, language: str = "en") -> dict:
     """Compute all features for a block of prose text."""
     prose = strip_markdown(text)
     sentences = split_sentences(prose)
@@ -493,27 +551,30 @@ def compute_features(text: str, register: str = "default",
         "lexical": {
             "mattr_window100": compute_mattr(words),
             "hapax_ratio": compute_hapax_ratio(words),
-            "distinctive_content_words": compute_distinctive_content_words(words),
-            "function_word_profile": compute_function_word_profile(words),
+            "distinctive_content_words": compute_distinctive_content_words(words, lang=language),
+            "function_word_profile": compute_function_word_profile(words, language),
         },
         "syntactic": {
             "sentence_stats": compute_sentence_stats(sentences),
             "sentence_initial_patterns": compute_sentence_initial_patterns(sentences),
             "paragraph_stats": compute_paragraph_stats(paragraphs),
-            "concession_rate": compute_concession_rate(sentences),
+            "concession_rate": compute_concession_rate(sentences, language),
         },
         "punctuation": compute_punctuation_rates(prose, word_count),
-        "hedging_booster": compute_hedging_booster(words, prose),
-        "pronouns": compute_pronoun_rates(words),
-        "contractions": compute_contraction_stats(prose, word_count),
+        "hedging_booster": compute_hedging_booster(words, prose, language),
+        "pronouns": compute_pronoun_rates(words, language),
         "structural": structural,
     }
+    if language == "en":
+        profile["contractions"] = compute_contraction_stats(prose, word_count)
+    else:
+        profile["language"] = language
 
     if use_textstat and HAS_TEXTSTAT:
-        profile["readability"] = compute_readability(prose)
+        profile["readability"] = compute_readability(prose, language)
 
     if use_spacy and HAS_SPACY:
-        profile["deep_syntactic"] = compute_spacy_features(prose)
+        profile["deep_syntactic"] = compute_spacy_features(prose, language)
 
     return profile
 
@@ -699,6 +760,7 @@ def generate_report(profile: dict, source_label: str = "") -> str:
             f"| Gunning Fog | {rd.get('gunning_fog', '—')} |",
             f"| Flesch reading ease | {rd.get('flesch_reading_ease', '—')} |",
             f"| Avg syllables/word | {rd.get('avg_syllables_per_word', '—')} |",
+            *([f"| Wiener Sachtextformel | {rd['wiener_sachtextformel']} |"] if 'wiener_sachtextformel' in rd else []),
             f"",
         ]
 
@@ -810,6 +872,8 @@ def main():
     parser.add_argument("--no-textstat", action="store_true")
     parser.add_argument("--no-spacy", action="store_true")
     parser.add_argument("--min-words", type=int, default=20000)
+    parser.add_argument("--language", choices=_lang.LANGUAGES, default="en",
+                        help="Language of the corpus: en or de (standard German). Default en")
     args = parser.parse_args()
 
     input_path = Path(args.input)
@@ -836,6 +900,7 @@ def main():
         register=args.register,
         use_textstat=use_textstat,
         use_spacy=use_spacy,
+        language=args.language,
     )
 
     word_count = profile["corpus_stats"]["word_count"]

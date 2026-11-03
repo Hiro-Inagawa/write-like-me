@@ -2,6 +2,19 @@
 
 All notable changes to Write Like Me. Versions are git tags and GitHub Releases.
 
+## 3.2.0 (2026-11-03)
+
+German (Hochdeutsch) as a second language.
+
+- A profile records its language as `"language": "de"`. `stylometry.py --language de` analyzes a German corpus, and `voice_profile.py init` carries the language into the profile. `voice_check.py --language de`, `voice_eval.py --language de` and `corpus_conflicts.py --language de` run the German baseline without a profile.
+- New `references/00-universal-baseline-de.md`. Every universal rule runs with German word lists: stance openers, filler openers and chatbot residue, performative verbs, `nicht nur … sondern auch`, summary openers, evaluative adjectives (stems that match the inflected forms), intensifiers, antithesis, closing caveat, benefit tail and tagline.
+- New German-only rules in `scripts/voice_rules_de.py`: `DE_QUOTES`, `DE_DASH`, `DE_NUMBER_FORMAT`, `DE_HEADING_CASE`, `DE_CALQUE`, `DE_PARTICIPLE_TAIL`, `DE_ADDRESS_MIX`, `DE_GENDER_MIX`, `DE_GENDER_FORM`, `DE_CONNECTIVE_DENSITY`, `DE_ASCII_UMLAUT` and `DE_SS_SPELLING`. Two register keys for German: `en_dash` and `gender_characters`. Gender forms are the writer's choice. The default checks only that one text does not mix them.
+- The measurements handle German: words with umlauts stay whole, German abbreviations (`z. B.`, `bzw.`) and ordinals (`am 2. November`) no longer split sentences, German function words, hedges, boosters and pronouns, Flesch reading ease with the Amstad formula and the Wiener Sachtextformel, the spaCy model `de_core_news_sm`, German passive and nominal style. A German corpus has no contraction measure.
+- The hook recognizes German prompts and the German phrases that switch the explanation step.
+- A star or underscore between two letters is no longer read as Markdown emphasis, so `Kund*innen … Kund*innen` keeps its stars.
+- 52 German goldens in `eval/goldens/universal-de.goldens.jsonl` with the baseline `eval/baselines/universal-de.json`, and `tests/test_german.py`. The checks workflow installs `de_core_news_sm` and runs the German gate. Every English golden gives the same verdict and the same rule hits as in 3.1.1.
+- The rules come from the German Wikipedia guide to AI-generated text (revision of 2026-10-29), Irrgang et al. (KONVENS 2024) and German typography rules.
+
 ## 3.1.1 (2026-11-02)
 
 - `compute_readability` in `scripts/stylometry.py` returned `{}` on every textstat release, because it called `textstat.word_count`, which textstat does not have, and one bare `except` discarded all five scores. Each score is now computed on its own, so Flesch-Kincaid grade, Gunning Fog, Flesch reading ease and syllables per word are back. Reported by Michael Wheatland in issue #1.

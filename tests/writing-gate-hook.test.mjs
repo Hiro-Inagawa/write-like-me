@@ -254,6 +254,24 @@ test('prompt: explainFirst false in hook.json turns it off, the environment wins
   assert.match(json(on).hookSpecificOutput.additionalContext, /explain the subject/);
 });
 
+test('prompt: a German request matches', () => {
+  assert.notEqual(promptRun('Kannst du mir eine Antwort auf diese E-Mail schreiben?').stdout, '');
+  assert.notEqual(promptRun('Überarbeite bitte den Text für mein Profil').stdout, '');
+  assert.notEqual(promptRun('Wie klingt das für dich?').stdout, '');
+});
+
+test('prompt: an unrelated German prompt does not match', () => {
+  assert.equal(promptRun('Starte bitte die Tests noch einmal').stdout, '');
+});
+
+test('prompt: German phrases switch the explanation step', () => {
+  const off = json(promptRun('Schreib eine Antwort auf die Mail, ohne Erklärung')).hookSpecificOutput.additionalContext;
+  assert.match(off, /explanation step is off/);
+  const env = { ...FAKE_ENV, WRITE_LIKE_ME_EXPLAIN: 'off' };
+  const on = run('prompt', JSON.stringify({ prompt: 'Schreib eine Antwort auf die Mail, erkläre zuerst' }), env);
+  assert.match(json(on).hookSpecificOutput.additionalContext, /explain the subject/);
+});
+
 // ----- both modes -----
 
 for (const mode of ['post-write', 'prompt']) {

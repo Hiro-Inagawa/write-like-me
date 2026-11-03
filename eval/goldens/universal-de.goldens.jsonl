@@ -1,0 +1,53 @@
+# German universal baseline goldens (standard German). Run with --language de. Every passage is made up.
+{"id": "de-em-001", "text": "Die Gewichte stehen fest — die Ausführung nicht.", "expect": "block", "rules": ["EM_DASH"]}
+{"id": "de-quote-001", "text": "Der Sprecher nannte das Ergebnis \"vorläufig\" und verwies auf die Prüfung.", "expect": "block", "rules": ["DE_QUOTES"], "note": "straight quotes"}
+{"id": "de-quote-002", "text": "Der Sprecher nannte das Ergebnis „vorläufig” und verwies auf die Prüfung.", "expect": "block", "rules": ["DE_QUOTES"], "note": "English closing mark U+201D"}
+{"id": "de-quote-003", "text": "Der Sprecher nannte das Ergebnis “vorläufig” und verwies auf die Prüfung.", "expect": "block", "rules": ["DE_QUOTES"], "note": "English pair"}
+{"id": "de-filler-001", "text": "Es ist wichtig zu beachten, dass die Frist am Freitag endet.", "expect": "block", "rules": ["FILLER_OPENER"]}
+{"id": "de-filler-002", "text": "In der heutigen schnelllebigen Welt plant kaum jemand länger als eine Woche.", "expect": "block", "rules": ["FILLER_OPENER"]}
+{"id": "de-filler-003", "text": "Stand meines letzten Wissensupdates gilt die alte Regel.", "expect": "block", "rules": ["FILLER_OPENER"], "note": "chatbot residue"}
+{"id": "de-stance-001", "text": "Interessanterweise sank der Verbrauch im Winter.", "expect": "block", "rules": ["STANCE_OPENER"]}
+{"id": "de-stance-002", "text": "Selbstverständlich gilt die Frist auch für Nachzügler.", "expect": "block", "rules": ["STANCE_OPENER"]}
+{"id": "de-perf-001", "text": "Die App revolutioniert die Terminplanung in Arztpraxen.", "expect": "block", "rules": ["PERFORMATIVE_VERB"]}
+{"id": "de-perf-002", "text": "Die Zahlen unterstreichen, wie knapp das Budget ist.", "expect": "block", "rules": ["PERFORMATIVE_VERB"]}
+{"id": "de-notonly-001", "text": "Das Gerät spart nicht nur Strom, sondern auch Platz.", "expect": "block", "rules": ["NOT_ONLY_BUT_ALSO"]}
+{"id": "de-summary-001", "text": "Die Anlage läuft seit März.\n\nZusammenfassend lässt sich sagen, dass sie zuverlässig arbeitet.", "expect": "block", "rules": ["SUMMARY_OPENER"]}
+{"id": "de-eval-001", "text": "Unsere innovative Plattform verbindet Lager und Kasse.", "expect": "block", "rules": ["EVALUATIVE_ADJECTIVE"], "note": "inflected stem"}
+{"id": "de-eval-002", "text": "Die Software ist leistungsstark und läuft auf jedem Rechner.", "expect": "review", "rules": ["EVALUATIVE_ADJECTIVE_SOFT"]}
+{"id": "de-intens-001", "text": "Das ist zweifellos die beste Wahl für kleine Betriebe.", "expect": "block", "rules": ["EMPTY_INTENSIFIER"]}
+{"id": "de-umlaut-001", "text": "Die Anmeldung ist fuer alle Mitglieder offen.", "expect": "block", "rules": ["DE_ASCII_UMLAUT"]}
+{"id": "de-umlaut-002", "text": "Die Aenderung gilt ab Montag fuer alle Filialen.", "expect": "block", "rules": ["DE_ASCII_UMLAUT"]}
+{"id": "de-ss-001", "text": "Die Strasse bleibt bis Freitag gesperrt.", "expect": "review", "rules": ["DE_SS_SPELLING"]}
+{"id": "de-address-001", "text": "Bitte prüfen Sie den Vertrag bis Montag. Danach kannst du ihn unterschreiben.", "expect": "block", "rules": ["DE_ADDRESS_MIX"]}
+{"id": "de-address-002", "text": "Wir schicken Ihnen die Unterlagen per Post. Melde dich, wenn etwas fehlt.", "expect": "block", "rules": ["DE_ADDRESS_MIX"]}
+{"id": "de-gender-001", "text": "Unsere Kund*innen bekommen die Rechnung per E-Mail. Viele Kunden zahlen sofort.", "expect": "review", "rules": ["DE_GENDER_MIX"], "note": "gender star and plain form"}
+{"id": "de-gender-002", "text": "Die Lehrer:innen planen den Ausflug. Die Schüler*innen packen.", "expect": "review", "rules": ["DE_GENDER_MIX"], "note": "two different characters"}
+{"id": "de-gender-003", "text": "Unsere Kund*innen bekommen die Rechnung per E-Mail.", "expect": "block", "rules": ["DE_GENDER_FORM"], "register_overrides": {"gender_characters": "forbidden"}, "note": "voice bans gender characters"}
+{"id": "de-calque-001", "text": "Das macht Sinn, weil die Lieferung sonst zu spät kommt.", "expect": "review", "rules": ["DE_CALQUE"]}
+{"id": "de-calque-002", "text": "Am Ende des Tages zählt nur der Umsatz.", "expect": "review", "rules": ["DE_CALQUE"]}
+{"id": "de-calque-003", "text": "Der Verein wurde in 2019 gegründet.", "expect": "review", "rules": ["DE_CALQUE"]}
+{"id": "de-calque-004", "text": "Die Firma setzt AI in der Buchhaltung ein.", "expect": "review", "rules": ["DE_CALQUE"]}
+{"id": "de-participle-001", "text": "Das Museum zeigt die Sammlung im Ostflügel, ihre Bedeutung für die Region hervorhebend.", "expect": "review", "rules": ["DE_PARTICIPLE_TAIL"]}
+{"id": "de-number-001", "text": "Der Anteil stieg auf 50% im zweiten Quartal.", "expect": "review", "rules": ["DE_NUMBER_FORMAT"]}
+{"id": "de-number-002", "text": "Das gilt z.B. für Mieter im Erdgeschoss.", "expect": "review", "rules": ["DE_NUMBER_FORMAT"]}
+{"id": "de-number-003", "text": "Die Rendite lag bei 3.5 Prozent im Jahr.", "expect": "review", "rules": ["DE_NUMBER_FORMAT"]}
+{"id": "de-number-004", "text": "Die Messe beginnt am November 2, 2026 in Köln.", "expect": "review", "rules": ["DE_NUMBER_FORMAT"]}
+{"id": "de-heading-001", "text": "# Die Wichtigsten Tipps Für Den Alltag\n\nDer Alltag beginnt um sieben Uhr.", "expect": "review", "rules": ["DE_HEADING_CASE"]}
+{"id": "de-dash-001", "text": "Der Zug kam pünktlich – das passiert selten.", "expect": "review", "rules": ["DE_DASH"]}
+{"id": "de-connective-001", "text": "Der Tarif ist günstig. Darüber hinaus gibt es einen Bonus. Zudem entfällt die Grundgebühr. Außerdem ist der erste Monat frei.", "expect": "review", "rules": ["DE_CONNECTIVE_DENSITY"]}
+{"id": "de-antithesis-001", "text": "Ein Werkzeug, nicht ein Spielzeug.", "expect": "review", "rules": ["COMPRESSED_ANTITHESIS"]}
+{"id": "de-antithesis-002", "text": "## Planung statt Chaos", "expect": "review", "rules": ["COMPRESSED_ANTITHESIS"], "note": "statt in a heading"}
+{"id": "de-benefit-001", "text": "Die App sortiert Belege automatisch, damit Sie mehr Zeit für Ihre Kunden haben.", "expect": "review", "rules": ["BENEFIT_TAIL"]}
+{"id": "de-tagline-001", "text": "Qualität, Vertrauen und Erfolg.", "expect": "review", "rules": ["TAGLINE"]}
+{"id": "de-caveat-001", "text": "Der Akku hält zehn Stunden.\n\nDas Laden dauert zwei Stunden.\n\nBeachten Sie, dass Kälte die Laufzeit verkürzt.", "expect": "review", "rules": ["CLOSING_CAVEAT"]}
+{"id": "de-pass-001", "text": "Ab dem 1. Januar 2027 läuft die Anmeldung nur noch online. Wer bis zum 31. Dezember einen Termin bucht, wird wie bisher bedient, und die Bearbeitung dauert etwa zwei Wochen.", "expect": "pass", "note": "ordinals, commas"}
+{"id": "de-pass-002", "text": "Die Gebühr steigt von 12 € auf 15 €, und 70 % der Anträge kommen digital. Der Zinssatz liegt bei 3,5 %, die Stadt rechnet mit 1.000 Anträgen im Monat.", "expect": "pass", "note": "German number format"}
+{"id": "de-pass-003", "text": "„Wir rechnen mit weniger Rückfragen“, sagt die Leiterin des Bürgeramts.", "expect": "pass", "note": "German quotation marks"}
+{"id": "de-pass-004", "text": "Der Zeitraum 2020–2026 umfasst drei Förderrunden. Die Software-Aktualisierung kommt im Mai.", "expect": "pass", "note": "range dash and compound hyphen"}
+{"id": "de-pass-005", "text": "Die Sprechstunde ist montags von 9 bis 12 Uhr, z. B. für Rückfragen zur Steuererklärung. Der Termin am 02.11.2026 beginnt um 14.30 Uhr.", "expect": "pass", "note": "abbreviation with space, German date and time"}
+{"id": "de-pass-006", "text": "Unsere Kundinnen und Kunden bekommen die Rechnung per E-Mail. Die Kundschaft zahlt meist sofort.", "expect": "pass", "note": "pair form and neutral noun"}
+{"id": "de-pass-007", "text": "Unsere Kund*innen bekommen die Rechnung per E-Mail. Viele Kund*innen zahlen sofort.", "expect": "pass", "note": "gender star used consistently"}
+{"id": "de-pass-008", "text": "Sie erhalten die Unterlagen per Post. Bitte senden Sie Ihre Antwort bis Montag.", "expect": "pass", "note": "formal address only"}
+{"id": "de-pass-009", "text": "Der Antrag wurde im März gestellt und im Mai bewilligt. Außerdem liegt ein Gutachten vor, das die Kosten auf zwölf Monate verteilt.", "expect": "pass", "note": "passive and one connective"}
+{"id": "de-pass-010", "text": "Die Donaudampfschifffahrtsgesellschaft stellte den Betrieb ein, nachdem die Zahl der Fahrgäste, die vor allem im Sommer kamen, über Jahre gesunken war.", "expect": "pass", "note": "long compound and nested clauses"}
+{"id": "de-pass-011", "text": "Er kam am Montag statt wie geplant am Dienstag, weil der Zug ausfiel und kein Ersatzbus fuhr.", "expect": "pass", "note": "statt inside a long sentence"}

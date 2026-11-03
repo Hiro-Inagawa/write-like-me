@@ -16,6 +16,9 @@ import sys
 from datetime import date
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from voice_lang import DE_BANS, LANGUAGES  # noqa: E402
+
 SCHEMA_VERSION = 1
 TRISTATE = ("off", "review", "block")
 LEVELS = ("off", "info", "review", "block")
@@ -41,6 +44,8 @@ DEFAULT_REGISTER = {
     "additions": "review",
     "empty_intensifiers": "block",
     "exclamations": "off",
+    "en_dash": "review",
+    "gender_characters": "allowed",
     "targets": {},
 }
 
@@ -74,6 +79,19 @@ DEFAULT_PROFILE = {
     "registers": {},
 }
 
+DEFAULT_PROFILE_DE = copy.deepcopy(DEFAULT_PROFILE)
+DEFAULT_PROFILE_DE.update({
+    "language": "de",
+    "source": "references/00-universal-baseline-de.md",
+    "bans": copy.deepcopy(DE_BANS),
+})
+
+
+def default_profile(lang: str = "en") -> dict:
+    """The universal baseline profile for a language."""
+    return DEFAULT_PROFILE_DE if lang == "de" else DEFAULT_PROFILE
+
+
 RANGE_KEYS = ("mean_sentence_words", "pct_long_ge30", "comma_per_sentence")
 MAX_KEYS = ("pct_short_le5_max", "hedge_per_100w_max", "boost_per_100w_max", "first_sg_per_100w_max",
             "hedge_per_100w_mean")
@@ -102,6 +120,8 @@ def validate_profile(profile: dict) -> list:
     for key in ("voice", "bans", "registers", "thresholds"):
         if key not in profile:
             errors.append("missing key: %s" % key)
+    if "language" in profile and profile["language"] not in LANGUAGES:
+        errors.append("language must be one of %s" % ", ".join(LANGUAGES))
     for key, value in (profile.get("bans") or {}).items():
         if not isinstance(value, list) or not all(isinstance(v, str) for v in value):
             errors.append("bans.%s must be a list of strings" % key)
@@ -133,7 +153,7 @@ def validate_profile(profile: dict) -> list:
                         errors.append("registers.%s.targets.%s must be a number" % (name, tkey))
                     elif tkey not in RANGE_KEYS + MAX_KEYS:
                         errors.append("registers.%s.targets.%s is not a known target" % (name, tkey))
-            elif key in ("semicolons", "contractions", "questions"):
+            elif key in ("semicolons", "contractions", "questions", "gender_characters"):
                 if value not in POLICY:
                     errors.append("registers.%s.%s must be one of %s" % (name, key, ", ".join(POLICY)))
             elif key == "tricolon":
@@ -141,7 +161,7 @@ def validate_profile(profile: dict) -> list:
                     errors.append("registers.%s.tricolon must be one of %s" % (name, ", ".join(LEVELS)))
             elif key in ("announcement_colon", "hedge_connectives", "meta_commentary", "compressed_antithesis",
                          "closing_caveat", "benefit_tail", "tagline", "additions",
-                         "empty_intensifiers", "exclamations"):
+                         "empty_intensifiers", "exclamations", "en_dash"):
                 if value not in TRISTATE:
                     errors.append("registers.%s.%s must be one of %s" % (name, key, ", ".join(TRISTATE)))
             else:
@@ -164,7 +184,8 @@ def init_from_stylometry(voice: str, register: str, stylo: dict) -> dict:
     pron = stylo["pronouns"]
     words = (stylo.get("corpus_stats") or {}).get("word_count")
     small = isinstance(words, (int, float)) and words < MIN_CORPUS_WORDS
-    profile = copy.deepcopy(DEFAULT_PROFILE)
+    lang = stylo.get("language", "en")
+    profile = copy.deepcopy(default_profile(lang))
     profile["voice"] = voice
     profile["generated"] = date.today().isoformat()
     profile["source"] = "03-corpus-source.md"
