@@ -9,6 +9,7 @@ from pathlib import Path
 import stylometry
 from stylometry import compute_features, split_sentences, tokenize_words
 from voice_check import check_text
+from voice_lang import detect_language
 from voice_profile import DEFAULT_PROFILE, DEFAULT_PROFILE_DE, default_profile, init_from_stylometry, validate_profile
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -116,6 +117,18 @@ class Rules(unittest.TestCase):
         self.assertNotIn("DE_CALQUE", rules_of("Der Chef sagte „das macht Sinn“ und ging."))
 
 
+class Detection(unittest.TestCase):
+    def test_detects_german_and_english(self):
+        self.assertEqual(detect_language(SAMPLE), "de")
+        self.assertEqual(detect_language("Das Meeting war gut. Der Plan steht."), "de")
+        self.assertEqual(detect_language("The plan is simple and it works for the team."), "en")
+        self.assertEqual(detect_language("Is this the real thing? I do not know."), "en")
+
+    def test_too_little_evidence_stays_english(self):
+        for text in ("", "Hallo", "# Überblick", "Design System 2026"):
+            self.assertEqual(detect_language(text), "en", text)
+
+
 class CommandLine(unittest.TestCase):
     def run_cli(self, *args, stdin=None):
         return subprocess.run([sys.executable, *args], cwd=ROOT, input=stdin, capture_output=True,
@@ -127,6 +140,31 @@ class CommandLine(unittest.TestCase):
         result = json.loads(res.stdout.rsplit("\n", 2)[0])
         self.assertEqual(res.returncode, 1)
         self.assertIn("DE_QUOTES", result["counts"])
+
+    def test_voice_check_detects_german_without_flag(self):
+        res = self.run_cli("scripts/voice_check.py", "-", "--json",
+                           stdin='Er nannte es "fertig" und ging nicht mehr in das Büro.')
+        result = json.loads(res.stdout.rsplit("\n", 2)[0])
+        self.assertEqual(result["language"], "de")
+        self.assertIn("DE_QUOTES", result["counts"])
+
+    def test_voice_check_detects_english_without_flag(self):
+        res = self.run_cli("scripts/voice_check.py", "-", "--json",
+                           stdin='He called it "done" and it was the end of the day for the team.')
+        result = json.loads(res.stdout.rsplit("\n", 2)[0])
+        self.assertEqual(result["language"], "en")
+        self.assertNotIn("DE_QUOTES", result["counts"])
+
+    def test_stylometry_detects_language_without_flag(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            corpus = Path(tmp, "korpus.md")
+            corpus.write_text(SAMPLE, encoding="utf-8")
+            out = Path(tmp, "p.json")
+            res = self.run_cli("scripts/stylometry.py", str(corpus), "--no-spacy", "--no-textstat",
+                               "--output", str(out))
+            self.assertEqual(res.returncode, 0, res.stderr)
+            self.assertIn("language detected as de", res.stderr)
+            self.assertEqual(json.loads(out.read_text(encoding="utf-8"))["language"], "de")
 
     def test_stylometry_language_flag(self):
         with tempfile.TemporaryDirectory() as tmp:

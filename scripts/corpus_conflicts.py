@@ -23,6 +23,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from stylometry import is_generated_artifact  # noqa: E402
 from voice_check import check_text  # noqa: E402
+from voice_lang import detect_language  # noqa: E402
 from voice_profile import default_profile  # noqa: E402
 
 for _s in (sys.stdout, sys.stderr):
@@ -39,12 +40,13 @@ def corpus_files(path: Path) -> list:
     return [f for f in files if not is_generated_artifact(f, path)]
 
 
-def find_conflicts(path: Path, examples: int = 3, language: str = "en") -> list:
-    """Return one entry per rule that blocks somewhere in the corpus, most frequent first."""
+def find_conflicts(path: Path, examples: int = 3, language: str = None) -> list:
+    """Return one entry per rule that blocks somewhere in the corpus, most frequent first.
+    Without a language it is detected from the whole corpus."""
     found = {}
-    profile = default_profile(language)
-    for file in corpus_files(path):
-        text = file.read_text(encoding="utf-8", errors="replace")
+    texts = [(f, f.read_text(encoding="utf-8", errors="replace")) for f in corpus_files(path)]
+    profile = default_profile(language or detect_language("\n".join(t for _, t in texts)))
+    for file, text in texts:
         result = check_text(text, profile, profile["default_register"], str(file))
         for hit in result["hits"]:
             if hit["severity"] != "block":
@@ -66,7 +68,7 @@ def main(argv=None) -> int:
     parser.add_argument("corpus", help="A corpus file or folder")
     parser.add_argument("--examples", type=int, default=3, help="Examples to print per rule (default 3)")
     parser.add_argument("--json", action="store_true", help="Print the conflicts as JSON")
-    parser.add_argument("--language", choices=("en", "de"), default="en", help="Language of the corpus (default en)")
+    parser.add_argument("--language", choices=("en", "de"), help="Language of the corpus (default: detected)")
     args = parser.parse_args(argv)
     path = Path(args.corpus)
     if not path.exists():

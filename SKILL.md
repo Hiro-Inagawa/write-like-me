@@ -44,14 +44,14 @@ On every invoke:
 
 ## Languages
 
-A voice is English or German. German means standard German (Hochdeutsch). The language is set once, when the corpus is analyzed, and is stored as `"language": "de"` in `profile.json`. Everything after that follows the profile: the checker uses the German word lists and the German-only rules, and the measurements use German function words, German abbreviations, German readability formulas and the spaCy model `de_core_news_sm`. A profile without `language` is English. In German the skill can be called "Schreib wie ich".
+A voice is English or German. German means standard German (Hochdeutsch). The language is detected when the corpus is analyzed, and is stored as `"language": "de"` in `profile.json`. Everything after that follows the profile: the checker uses the German word lists and the German-only rules, and the measurements use German function words, German abbreviations, German readability formulas and the spaCy model `de_core_news_sm`. A profile without `language` is English. In German the skill can be called "Schreib wie ich".
 
 For a German voice:
 
-- Pass `--language de` to `scripts/stylometry.py` in Stage 3 and to `scripts/corpus_conflicts.py` in Stage 4. `voice_profile.py init` takes the language from the stylometry file.
+- `scripts/stylometry.py` in Stage 3 and `scripts/corpus_conflicts.py` in Stage 4 detect the language from the corpus. Check the detected language in the stylometry note and pass `--language de` or `--language en` only to override it. `voice_profile.py init` takes the language from the stylometry file.
 - Read `references/00-universal-baseline-de.md` wherever this file says `references/00-universal-baseline.md`.
 - Two register keys exist for German only. `en_dash` (off, review or block) controls the Gedankenstrich check. `gender_characters` (off, allowed, review or forbidden) decides whether the voice uses forms such as Kund*innen. The default is `allowed`, which checks only that one text does not mix forms. Gender forms are the writer's choice, not an AI tell.
-- Without a profile, `python scripts/voice_check.py <draft> --language de` runs the German baseline.
+- Without a profile, `python scripts/voice_check.py <draft>` detects the language of the draft and runs the matching baseline. A text too short to tell is checked as English. `--language` overrides the detection.
 
 ---
 
@@ -144,7 +144,7 @@ For each register:
 python scripts/stylometry.py <path> --register <name> --output voices/<name>/<register>.stylometry.json
 ```
 
-For a German corpus, add `--language de`. Install the German spaCy model first if spaCy is used: `python -m spacy download de_core_news_sm`.
+The language of the corpus is detected, and `--language` overrides it. For a German corpus, install the German spaCy model first if spaCy is used: `python -m spacy download de_core_news_sm`.
 
 The script creates the output folder when it is missing. Add `--report` to write the Markdown report next to the JSON file. The report goes into the voice folder and never into the corpus folder. Report word counts per register and any warnings. The JSON of an English corpus carries a contraction count and a rate per 100 words. A German corpus has none, because German has few contractions.
 
@@ -159,7 +159,7 @@ Three sources, in order:
 3. **Negative space.** Sentence shapes never used, connective patterns absent, lengths never reached.
 
 4. **Conflicts with the universal baseline.** Run the checker over the author's own corpus with the universal baseline:
-   `python scripts/corpus_conflicts.py <corpus folder or filtered text file>` (add `--language de` for a German corpus)
+   `python scripts/corpus_conflicts.py <corpus folder or filtered text file>` (detects the language, `--language` overrides it)
    Every rule that blocks somewhere in the author's own writing (for example `NOT_ONLY_BUT_ALSO`) is reported with a count and examples. Each one is a conflict that the author decides in Stage 5. Keeping the habit means an entry in `rule_overrides` in `profile.json`, and dropping it means the rule stays. Do not decide for the author. The step ends with `VOICE_CONFLICTS_FOUND` or `VOICE_CONFLICTS_NONE`.
 
 Compile candidate rules. The statistics table in `references/04-rule-mining.md` includes the contraction rate. A count of 0 contractions in the primary register is the candidate rule "no contractions".

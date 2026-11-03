@@ -7,6 +7,8 @@ A profile names its language in "language" ("en" or "de"). Without it the langua
 German means standard German (Hochdeutsch) only. Stdlib only.
 """
 
+import re
+
 LANGUAGES = ("en", "de")
 
 
@@ -16,6 +18,22 @@ def lang_of(profile) -> str:
 
 
 SPACY_MODELS = {"en": "en_core_web_sm", "de": "de_core_news_sm"}
+
+# --- Language detection ---
+# Short words that are common in one language and rare in the other ("was", "in", "so" are both)
+_EN_MARKERS = frozenset("the and is of to that it with this you are for not have be on they we would".split())
+_DE_MARKERS = frozenset("der die das und ist nicht ich mit auf für sich ein eine den dem auch von sind wird wir aber oder".split())
+_WORD = re.compile(r"[^\W\d_]+")
+
+
+def detect_language(text: str) -> str:
+    """Guess en or de from marker words, with umlauts and ß as extra German evidence.
+    Too little evidence (a few words, a heading) gives English, the old default."""
+    words = _WORD.findall(text.lower())
+    en = sum(1 for w in words if w in _EN_MARKERS)
+    de = sum(1 for w in words if w in _DE_MARKERS)
+    de += 0.5 * sum(1 for w in words if any(c in w for c in "äöüß"))
+    return "de" if de >= 2 and de > en else "en"
 
 # --- Measurements (stylometry.py) ---
 

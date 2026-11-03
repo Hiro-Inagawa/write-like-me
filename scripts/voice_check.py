@@ -19,7 +19,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from stylometry import (compute_hedging_booster, compute_pronoun_rates, compute_punctuation_rates,  # noqa: E402
                         compute_sentence_stats, split_sentences, tokenize_words)
-from voice_lang import LANGUAGES, lang_of  # noqa: E402
+from voice_lang import LANGUAGES, detect_language, lang_of  # noqa: E402
 from voice_profile import default_profile, load_profile, resolve_register, validate_profile  # noqa: E402
 from voice_rules import BLOCK, REVIEW, run_rules  # noqa: E402
 from voice_segment import prose_text, segment  # noqa: E402
@@ -102,6 +102,7 @@ def check_text(text: str, profile: dict, register: str, draft_name: str = "-", s
         "voice": profile.get("voice", "universal"),
         "register": register,
         "word_count": len(tokenize_words(prose_text(segs))),
+        "language": lang_of(profile),
         "verdict": verdict,
         "counts": counts,
         "hits": [h.__dict__ for h in hits],
@@ -112,7 +113,8 @@ def check_text(text: str, profile: dict, register: str, draft_name: str = "-", s
 def render(result: dict, quiet: bool) -> str:
     lines = []
     if not quiet:
-        lines.append("voice=%s register=%s words=%d" % (result["voice"], result["register"], result["word_count"]))
+        lines.append("voice=%s register=%s language=%s words=%d" % (
+            result["voice"], result["register"], result.get("language", "en"), result["word_count"]))
         for h in result["hits"]:
             lines.append("%-6s L%-4d %-24s %s  | %s" % (h["severity"], h["line"], h["rule"], h["message"], h["excerpt"]))
         for d in result["drift"]:
@@ -138,7 +140,8 @@ def main(argv=None) -> int:
     parser.add_argument("--explanation", help="File with the approved explanation. Every number and name in the draft must appear in it")
     parser.add_argument("--rejected", help="File with one rejected phrase per line. Any of them in the draft blocks")
     parser.add_argument("--language", choices=LANGUAGES,
-                        help="Baseline language without --profile: en or de (standard German). A profile sets its own")
+                        help="Baseline language without --profile: en or de (standard German). "
+                             "Default: detected from the draft. A profile sets its own")
     parser.add_argument("--check-citations", action="store_true",
                         help="Also check text under Sources, References, and similar headings (skipped by default)")
     args = parser.parse_args(argv)
@@ -148,7 +151,7 @@ def main(argv=None) -> int:
     except OSError as exc:
         print("ERROR: cannot read draft: %s" % exc)
         return 2
-    profile = default_profile(args.language or "en")
+    profile = default_profile(args.language or detect_language(text))
     if args.profile:
         try:
             profile = load_profile(args.profile)

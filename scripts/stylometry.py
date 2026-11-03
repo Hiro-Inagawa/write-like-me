@@ -872,8 +872,8 @@ def main():
     parser.add_argument("--no-textstat", action="store_true")
     parser.add_argument("--no-spacy", action="store_true")
     parser.add_argument("--min-words", type=int, default=20000)
-    parser.add_argument("--language", choices=_lang.LANGUAGES, default="en",
-                        help="Language of the corpus: en or de (standard German). Default en")
+    parser.add_argument("--language", choices=_lang.LANGUAGES,
+                        help="Language of the corpus: en or de (standard German). Default: detected from the corpus")
     args = parser.parse_args()
 
     input_path = Path(args.input)
@@ -882,6 +882,10 @@ def main():
     if not combined_text.strip():
         print("Error: no text found in input.", file=sys.stderr)
         sys.exit(1)
+
+    if not args.language:
+        args.language = _lang.detect_language(combined_text)
+        print(f"Note: language detected as {args.language}. Pass --language to override.", file=sys.stderr)
 
     use_textstat = HAS_TEXTSTAT and not args.no_textstat
     use_spacy    = HAS_SPACY    and not args.no_spacy

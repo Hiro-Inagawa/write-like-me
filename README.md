@@ -96,7 +96,7 @@ The severity of each rule is set per register in `profile.json`. `info` hits app
 
 ## GERMAN
 
-Analyze a German corpus with `--language de`, and the profile records `"language": "de"`. From then on the checker runs the German baseline in `references/00-universal-baseline-de.md`. Without a profile, `python scripts/voice_check.py draft.md --language de` checks any German text.
+The language is detected automatically. When you analyze a German corpus, the profile records `"language": "de"`, and from then on the checker runs the German baseline in `references/00-universal-baseline-de.md` for that voice. Without a profile, the checker reads the draft and picks English or German by itself. A text too short to tell, such as a single heading, is checked as English. `--language en` or `--language de` overrides the detection.
 
 The German baseline has two parts. The first is the English baseline in German words, for example `Es ist wichtig zu beachten, dass`, `In der heutigen schnelllebigen Welt`, `nicht nur … sondern auch`, `revolutionieren` and `innovativ`. The second covers what only happens in German: `"…"` or `“…”` in place of `„…“`, `50%` and `z.B.` in place of `50 %` and `z. B.`, English decimal points and dates, English title case in headings, phrases such as `Sinn machen` and `am Ende des Tages`, sentences that end in `…, die Bedeutung hervorhebend`, a text that switches between du and Sie, piles of `darüber hinaus` and `zudem`, and umlauts written as `ue`.
 
@@ -239,7 +239,7 @@ Every voice now ships with a deterministic checker. Run it on any draft:
 
     python scripts/voice_check.py draft.md --profile voices/<your-name>/profile.json
 
-It prints every hit with a line number and a fix, then a verdict. `block` hits are zero-tolerance rules from your profile and the universal baseline. `review` hits are patterns with documented exceptions, so you decide. The exit code is 1 on a block, which makes the checker usable as a gate in scripts, hooks, and CI. Without `--profile` it runs the universal anti-AI baseline only, which works on any text. Add `--language de` for German text.
+It prints every hit with a line number and a fix, then a verdict. `block` hits are zero-tolerance rules from your profile and the universal baseline. `review` hits are patterns with documented exceptions, so you decide. The exit code is 1 on a block, which makes the checker usable as a gate in scripts, hooks, and CI. Without `--profile` it runs the universal anti-AI baseline only, which works on any text. It detects whether the draft is English or German, and `--language` overrides that.
 
 ## EVALUATING THE CHECKER
 
