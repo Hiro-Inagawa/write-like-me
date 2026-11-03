@@ -2,6 +2,12 @@
 
 All notable changes to Write Like Me. Versions are git tags and GitHub Releases.
 
+## 3.1.0 (2026-11-02)
+
+- The explanation step can be turned off. It stays on by default. For one prompt, "just write it", "write it directly", "skip the explanation", "without the explanation" or "no explanation first" turns it off, and "explain first", "explain it first" or "with the explanation" turns it on. For a voice, `"explainFirst": false` in `hook.json` turns it off. `WRITE_LIKE_ME_EXPLAIN=off|on` wins over `hook.json`, and the prompt phrase wins over both.
+- With the step off, the prompt hook asks for the text written directly from the request and the source, with the same no-additions rule and the checker run.
+- `SKILL.md`, `references/09-how-to-write.md`, `references/10-hooks.md` and the README describe the switch. Four hook tests cover it.
+
 ## 3.0.1 (2026-10-30)
 
 - `COMPRESSED_ANTITHESIS` now covers "instead of". In a line under 12 words, a heading or a label it flags any "instead of" tail. In longer prose it flags an "instead of X" that ends at punctuation when the negated half has four words or fewer, so "every action the board has instead of a few, so" is flagged and "the small model instead of the large one because" passes.

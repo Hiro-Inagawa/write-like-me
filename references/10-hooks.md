@@ -70,6 +70,7 @@ All keys are optional. A key that is present replaces the default list. The `add
   "defaultRegister": "essay",
   "registers": { "letter": ["/letters/", "cover"], "post": ["/social/"] },
   "promptPhrases": ["tidy this up"],
+  "explainFirst": true,
   "explanationFile": "explanation.md",
   "rejectedFile": "rejected.txt",
   "profile": "profile.json"
@@ -81,6 +82,7 @@ All keys are optional. A key that is present replaces the default list. The `add
 - `excludeNames` and `excludePrefixes` remove files by name. The defaults cover README, CHANGELOG, LICENSE, SKILL, GATES, CONTRIBUTING, CLAUDE and AGENTS files and anything starting with `plan-`.
 - `registers` maps a register name from the profile to path fragments. The first register whose fragment matches the path is used, and `defaultRegister` applies when none match.
 - `promptPhrases` adds phrases that make the prompt hook fire.
+- `explainFirst` decides whether the prompt hook asks for the explanation step. The default is `true`. With `false` the hook asks for the text directly. A prompt that says "just write it", "write it directly", "skip the explanation", "without the explanation" or "no explanation first" turns the step off for that prompt, and "explain first", "explain it first" or "with the explanation" turns it on.
 - `explanationFile` and `rejectedFile` name the approved explanation and the file of rejected phrases, one per line. A relative path is read from the voice folder and an absolute path is used as it is. When a file exists, the hook passes it to the checker as `--explanation` or `--rejected`, so `ADDITION` and `REPEATED_PHRASE` run on every written text. A file that does not exist is not passed.
 - `profile` points at a `profile.json` in another location. A relative path is read from the folder of `hook.json`.
 
@@ -96,6 +98,7 @@ When the checker returns REVIEW, the hook prints each review hit and each drift 
 | `WRITE_LIKE_ME_PROFILE` | Path of a `profile.json` in any location. The hook reads `hook.json` from the same folder. |
 | `WRITE_LIKE_ME_EXPLANATION` | Path of the approved explanation. Wins over `explanationFile` in `hook.json`. |
 | `WRITE_LIKE_ME_REJECTED` | Path of the rejected phrases file. Wins over `rejectedFile` in `hook.json`. |
+| `WRITE_LIKE_ME_EXPLAIN` | `off` or `on`. Wins over `explainFirst` in `hook.json`. A phrase in the prompt wins over both. |
 | `WRITE_LIKE_ME_PYTHON` | Python executable. The default is `python`. |
 
 ## Testing the hooks

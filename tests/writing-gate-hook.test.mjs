@@ -225,6 +225,35 @@ test('prompt: verb more than 60 characters before the noun does not match', () =
   assert.equal(promptRun(`write ${'x'.repeat(70)} email`).stdout, '');
 });
 
+test('prompt: the explanation step is on by default', () => {
+  assert.match(json(promptRun('Can you write a reply to this email?')).hookSpecificOutput.additionalContext, /explain the subject/);
+});
+
+test('prompt: a skip phrase turns the explanation step off for that prompt', () => {
+  const ctx = json(promptRun('Write a reply to this email, just write it')).hookSpecificOutput.additionalContext;
+  assert.match(ctx, /explanation step is off/);
+  assert.doesNotMatch(ctx, /explain the subject/);
+});
+
+test('prompt: WRITE_LIKE_ME_EXPLAIN=off turns it off and an explain phrase turns it back on', () => {
+  const env = { ...FAKE_ENV, WRITE_LIKE_ME_EXPLAIN: 'off' };
+  const off = run('prompt', JSON.stringify({ prompt: 'Can you write a reply to this email?' }), env);
+  assert.match(json(off).hookSpecificOutput.additionalContext, /explanation step is off/);
+  const on = run('prompt', JSON.stringify({ prompt: 'Write a reply to this email, explain first' }), env);
+  assert.match(json(on).hookSpecificOutput.additionalContext, /explain the subject/);
+});
+
+test('prompt: explainFirst false in hook.json turns it off, the environment wins over it', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'wlm-explain-'));
+  mkdirSync(join(dir, 'voices', 'demo'), { recursive: true });
+  writeFileSync(join(dir, 'voices', 'demo', 'hook.json'), JSON.stringify({ explainFirst: false }));
+  const p = JSON.stringify({ prompt: 'Can you write a reply to this email?' });
+  const off = run('prompt', p, { ...FAKE_ENV, WRITE_LIKE_ME_SKILL_DIR: dir });
+  assert.match(json(off).hookSpecificOutput.additionalContext, /explanation step is off/);
+  const on = run('prompt', p, { ...FAKE_ENV, WRITE_LIKE_ME_SKILL_DIR: dir, WRITE_LIKE_ME_EXPLAIN: 'on' });
+  assert.match(json(on).hookSpecificOutput.additionalContext, /explain the subject/);
+});
+
 // ----- both modes -----
 
 for (const mode of ['post-write', 'prompt']) {

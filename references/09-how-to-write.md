@@ -42,6 +42,8 @@ When the author rejects a text, say in your own words what the objection was and
 
 The method has two messages, in this order, and they are never merged. The first message is the explanation to the author in chat. The second message, sent after approval, is the text, cut from the explanation. A sentence that appears in the text and not in the explanation is a defect, because it was written to the format and not to a person. If a new sentence seems necessary, it goes into the explanation first and waits for approval there.
 
+The explanation step can be turned off, and it is on by default. For one text, the author says "just write it" or "skip the explanation", and "explain first" turns it back on. For a voice, `"explainFirst": false` in `voices/<name>/hook.json` turns it off, and the environment variable `WRITE_LIKE_ME_EXPLAIN` set to `off` or `on` wins over that file. With the step off, the text is written directly from the request and the real source. The other rules stay. Nothing is added that the request or the source did not contain, and the checker runs before the text is shown, without `--explanation`.
+
 ## Moves that are never allowed
 
 - Slogans, taglines and any sentence that sounds like an advert.

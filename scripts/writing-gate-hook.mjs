@@ -11,7 +11,8 @@
 // optional hook.json with the path rules. Node standard library only.
 //
 // Environment overrides: WRITE_LIKE_ME_VOICE, WRITE_LIKE_ME_SKILL_DIR, WRITE_LIKE_ME_CHECKER,
-// WRITE_LIKE_ME_PROFILE, WRITE_LIKE_ME_PYTHON, WRITE_LIKE_ME_EXPLANATION, WRITE_LIKE_ME_REJECTED.
+// WRITE_LIKE_ME_PROFILE, WRITE_LIKE_ME_PYTHON, WRITE_LIKE_ME_EXPLANATION, WRITE_LIKE_ME_REJECTED,
+// WRITE_LIKE_ME_EXPLAIN (on or off).
 
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
@@ -41,14 +42,28 @@ export const DEFAULT_CONFIG = {
   defaultRegister: null,
   registers: {},
   promptPhrases: [],
+  explainFirst: true,
 };
 
+const YES_NO_RULE =
+  'If the author asked a yes or no question about a text, answer yes or no first and change nothing until the author says so.';
 const PROMPT_CONTEXT =
   'This prompt asks for a text other people will read, or a judgment of one. ' +
   'write-like-me applies now, without being asked: read references/09-how-to-write.md, ' +
   'explain the subject to the author in chat first, then cut that explanation into the text, ' +
-  'add nothing the request did not contain, and run the checker before showing it. ' +
-  'If the author asked a yes or no question about a text, answer yes or no first and change nothing until the author says so.';
+  'add nothing the request did not contain, and run the checker before showing it. ' + YES_NO_RULE;
+const PROMPT_CONTEXT_DIRECT =
+  'This prompt asks for a text other people will read, or a judgment of one. ' +
+  'write-like-me applies now, without being asked. The explanation step is off: write the text directly ' +
+  'from the request and the real source, add nothing they did not contain, and run the checker before showing it. ' +
+  YES_NO_RULE;
+
+// Phrases in a prompt that switch the explanation step for that one prompt.
+const EXPLAIN_OFF_PHRASES = [
+  'skip the explanation', 'without the explanation', 'without an explanation', 'no explanation first',
+  'just write it', 'write it directly',
+];
+const EXPLAIN_ON_PHRASES = ['explain first', 'explain it first', 'with the explanation'];
 
 const REQUEST_VERBS =
   'write|draft|rewrite|revise|reword|proofread|polish|shorten|improve|reply|respond|answer|formulate|suggest';
@@ -135,6 +150,7 @@ export function loadConfig(voice, dir = skillDir()) {
   if (Array.isArray(user.addInclude)) config.include = [...config.include, ...user.addInclude.map(String)];
   if (Array.isArray(user.addExclude)) config.exclude = [...config.exclude, ...user.addExclude.map(String)];
   if (typeof user.defaultRegister === 'string') config.defaultRegister = user.defaultRegister;
+  if (typeof user.explainFirst === 'boolean') config.explainFirst = user.explainFirst;
   if (user.registers && typeof user.registers === 'object') config.registers = user.registers;
   for (const key of ['explanationFile', 'rejectedFile', 'profile']) {
     if (typeof user[key] === 'string' && user[key]) config[key] = inVoiceDir(user[key], folder);
@@ -330,12 +346,24 @@ export function promptAsksForReaderText(prompt, config = DEFAULT_CONFIG) {
   return VERB_NOUN_RE.test(text);
 }
 
+// Whether the explanation step runs: a phrase in the prompt wins, then WRITE_LIKE_ME_EXPLAIN, then hook.json.
+export function explainFirst(prompt, config = DEFAULT_CONFIG) {
+  const lower = String(prompt ?? '').toLowerCase();
+  if (EXPLAIN_OFF_PHRASES.some((p) => lower.includes(p))) return false;
+  if (EXPLAIN_ON_PHRASES.some((p) => lower.includes(p))) return true;
+  const env = String(process.env.WRITE_LIKE_ME_EXPLAIN ?? '').trim().toLowerCase();
+  if (['off', 'false', '0', 'no'].includes(env)) return false;
+  if (['on', 'true', '1', 'yes'].includes(env)) return true;
+  return config.explainFirst !== false;
+}
+
 function runPrompt(argv) {
   const input = readInput();
   if (!input || typeof input.prompt !== 'string') return;
   const config = loadConfig(resolveVoice(argv));
   if (!promptAsksForReaderText(input.prompt, config)) return;
-  emit({ hookSpecificOutput: { hookEventName: 'UserPromptSubmit', additionalContext: PROMPT_CONTEXT } });
+  const context = explainFirst(input.prompt, config) ? PROMPT_CONTEXT : PROMPT_CONTEXT_DIRECT;
+  emit({ hookSpecificOutput: { hookEventName: 'UserPromptSubmit', additionalContext: context } });
 }
 
 // ---------- entry ----------

@@ -1,7 +1,7 @@
 ---
 name: write-like-me
-version: 3.0.1
-description: Use when writing or revising prose for a reader (emails, cover letters, form-field answers, profile texts, portfolio pages, listing and README prose), when asked about such a text, or when building a new writing voice from a corpus. On invoke: checks the voices/ folder. If voices exist, routes to writing mode, which follows a two-message method (explain first, then write the text). If none exist, starts the 7-stage voice-building workflow. Supports multiple named voices. Includes a deterministic draft checker (scripts/voice_check.py), an eval harness, and Claude Code hooks.
+version: 3.1.0
+description: Use when writing or revising prose for a reader (emails, cover letters, form-field answers, profile texts, portfolio pages, listing and README prose), when asked about such a text, or when building a new writing voice from a corpus. On invoke: checks the voices/ folder. If voices exist, routes to writing mode, which follows a two-message method (explain first, then write the text), and the explanation step can be switched off. If none exist, starts the 7-stage voice-building workflow. Supports multiple named voices. Includes a deterministic draft checker (scripts/voice_check.py), an eval harness, and Claude Code hooks.
 ---
 
 # Write Like Me
@@ -64,6 +64,10 @@ For every text that a reader will see, the work has two steps and they are never
 
 1. **Message one is the explanation.** Read the real source first. Then explain the subject to the author in chat, in plain paragraphs, as the answer to "What is this, and why does it exist?" Include the actual feature, the actual number and one example made for this text. Wait for the author to approve it.
 2. **Message two is the text.** After approval, cut the explanation down to the target and change the point of view where needed. The approved wording stays. A sentence that is in the text and not in the explanation is a defect. Add nothing the request, the source or the explanation did not contain, and never add a caveat, a disclaimer or a closing note.
+
+### Turning the explanation off
+
+The explanation step can be turned off, and it is on by default. For one text, the author says "just write it" or "skip the explanation", and "explain first" turns it back on. For a voice, `"explainFirst": false` in `voices/<name>/hook.json` turns it off, and the environment variable `WRITE_LIKE_ME_EXPLAIN` set to `off` or `on` wins over that file. With the step off, the text is written directly from the request and the real source. The other rules stay. Nothing is added that the request or the source did not contain, and the checker runs before the text is shown, without `--explanation`.
 
 When the author asks a question about a text, the reply is the answer and nothing else. After a rejection, state what was understood, name the rule that was broken, and start again from the source. The full method, the moves that are never allowed and the rules for working with the author are in `references/09-how-to-write.md`.
 

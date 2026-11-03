@@ -67,6 +67,8 @@ A text written straight to a format, such as "portfolio copy" or "cover letter",
 1. **Message one.** Read the real source. Explain the subject to the author in chat, in plain paragraphs, with the actual feature, the actual number and one example. The author approves it or corrects it.
 2. **Message two.** Cut the approved explanation down to the target. A sentence in the text that was not in the explanation is a defect.
 
+The explanation step can be turned off, and it is on by default. For one text, the author says "just write it" or "skip the explanation", and "explain first" turns it back on. For a voice, `"explainFirst": false` in `voices/<name>/hook.json` turns it off, and the environment variable `WRITE_LIKE_ME_EXPLAIN` set to `off` or `on` wins over that file. With the step off, the text is written directly from the request and the real source. The other rules stay. Nothing is added that the request or the source did not contain, and the checker runs before the text is shown, without `--explanation`.
+
 The file also lists the moves that are never allowed and the rules for working with the author: one piece at a time, the author's text as the base, a question answered without action, and a review against every earlier correction before the draft is shown.
 
 ## NEW CHECKS IN V3
