@@ -8,6 +8,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - run: pip install textstat spacy && python -m spacy download en_core_web_sm
       - run: python tests/run_tests.py
       - run: python tests/negative_control.py
       - run: python eval/voice_eval.py score --goldens eval/goldens/universal.goldens.jsonl --gate eval/baselines/universal.json

@@ -384,19 +384,20 @@ def compute_hapax_ratio(words: list) -> float:
 def compute_readability(text: str) -> dict:
     if not HAS_TEXTSTAT or not text.strip():
         return {}
-    try:
-        return {
-            "flesch_kincaid_grade": _textstat.flesch_kincaid_grade(text),
-            "gunning_fog": _textstat.gunning_fog(text),
-            "flesch_reading_ease": _textstat.flesch_reading_ease(text),
-            "avg_syllables_per_word": round(_textstat.avg_syllables_per_word(text), 3),
-            "lexical_density": round(
-                _textstat.lexicon_count(text, removepunct=True) /
-                max(_textstat.word_count(text), 1), 3
-            ),
-        }
-    except Exception:
-        return {}
+    metrics = {
+        "flesch_kincaid_grade": lambda: _textstat.flesch_kincaid_grade(text),
+        "gunning_fog": lambda: _textstat.gunning_fog(text),
+        "flesch_reading_ease": lambda: _textstat.flesch_reading_ease(text),
+        "avg_syllables_per_word": lambda: round(_textstat.avg_syllables_per_word(text), 3),
+    }
+    # Each metric on its own, so one textstat API change costs one score and not all of them.
+    out = {}
+    for name, fn in metrics.items():
+        try:
+            out[name] = fn()
+        except Exception:
+            continue
+    return out
 
 
 # --- Tier 3: spaCy ---
@@ -417,6 +418,9 @@ def compute_spacy_features(text: str) -> dict:
     passive_count = 0
     nominalizations = 0
     nom_suffixes = ("tion", "ness", "ment", "ity", "ism", "ance", "ence")
+    content_pos = {"NOUN", "PROPN", "VERB", "ADJ", "ADV"}
+    content_words = 0
+    alpha_words = 0
 
     for sent in doc.sents:
         tokens = [t for t in sent if not t.is_space]
@@ -441,6 +445,9 @@ def compute_spacy_features(text: str) -> dict:
         for t in tokens:
             if t.pos_ == "NOUN" and any(t.lemma_.endswith(s) for s in nom_suffixes):
                 nominalizations += 1
+            if t.is_alpha:
+                alpha_words += 1
+                content_words += t.pos_ in content_pos
 
     total_sents = max(len(list(doc.sents)), 1)
     total_tokens = max(len([t for t in doc if not t.is_space]), 1)
@@ -454,6 +461,7 @@ def compute_spacy_features(text: str) -> dict:
         "avg_dependency_depth": round(statistics.mean(depths) if depths else 0, 3),
         "passive_ratio": round(passive_count / total_sents, 3),
         "nominalization_per_1000w": round(nominalizations / total_tokens * 1000, 3),
+        "lexical_density": round(content_words / max(alpha_words, 1), 3),
         "top_pos_bigrams": top_bigrams,
     }
 
@@ -691,7 +699,6 @@ def generate_report(profile: dict, source_label: str = "") -> str:
             f"| Gunning Fog | {rd.get('gunning_fog', '—')} |",
             f"| Flesch reading ease | {rd.get('flesch_reading_ease', '—')} |",
             f"| Avg syllables/word | {rd.get('avg_syllables_per_word', '—')} |",
-            f"| Lexical density | {rd.get('lexical_density', '—')} |",
             f"",
         ]
 
@@ -706,6 +713,7 @@ def generate_report(profile: dict, source_label: str = "") -> str:
             f"| Avg dependency depth | {ds.get('avg_dependency_depth', '—')} |",
             f"| Passive ratio | {ds.get('passive_ratio', '—')} |",
             f"| Nominalizations per 1000w | {ds.get('nominalization_per_1000w', '—')} |",
+            f"| Lexical density | {ds.get('lexical_density', '—')} |",
             f"",
         ]
         top_pos = ds.get("top_pos_bigrams", [])[:10]

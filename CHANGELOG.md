@@ -2,6 +2,12 @@
 
 All notable changes to Write Like Me. Versions are git tags and GitHub Releases.
 
+## 3.1.1 (2026-11-02)
+
+- `compute_readability` in `scripts/stylometry.py` returned `{}` on every textstat release, because it called `textstat.word_count`, which textstat does not have, and one bare `except` discarded all five scores. Each score is now computed on its own, so Flesch-Kincaid grade, Gunning Fog, Flesch reading ease and syllables per word are back. Reported by Michael Wheatland in issue #1.
+- `lexical_density` moved from the textstat tier to the spaCy tier under `deep_syntactic`. It is now content words (nouns, proper nouns, verbs, adjectives, adverbs) divided by all alphabetic words. The old formula would have been 1.0 for every text once the missing call was replaced. Both report renderers read the new key.
+- New `tests/test_optional_tiers.py` checks that both optional tiers return numbers when their libraries are installed. The checks workflow installs textstat, spaCy and `en_core_web_sm` so these tests run there.
+
 ## 3.1.0 (2026-11-02)
 
 - The explanation step can be turned off. It stays on by default. For one prompt, "just write it", "write it directly", "skip the explanation", "without the explanation" or "no explanation first" turns it off, and "explain first", "explain it first" or "with the explanation" turns it on. For a voice, `"explainFirst": false` in `hook.json` turns it off. `WRITE_LIKE_ME_EXPLAIN=off|on` wins over `hook.json`, and the prompt phrase wins over both.

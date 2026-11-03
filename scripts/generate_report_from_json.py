@@ -179,7 +179,7 @@ def format_report(profile: dict, source_label: str = "") -> list[str]:
             f"| Gunning Fog | {rd.get('gunning_fog', '—')} |",
             f"| Flesch reading ease | {rd.get('flesch_reading_ease', '—')} |",
             f"| Avg syllables/word | {rd.get('avg_syllables_per_word', '—')} |",
-            f"| Lexical density | {rd.get('lexical_density', '—')} |",
+            f"| Lexical density (spaCy) | {profile.get('deep_syntactic', {}).get('lexical_density', '—')} |",
             f"",
         ]
 
